@@ -15,8 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.contrib.auth import views as auth_views
+from core.views import home # Importa la vista home de tu app 'core'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', home, name='home'), # Tu página de inicio
+    path('vuelos/', include('vuelos.urls')),
+    path('pasajeros/', include('pasajeros.urls')),
+    path('reservas/', include('reservas.urls')),
+
+    # URLs de Autenticación (Django's built-in)
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
+    # Puedes añadir URLs para registro de usuarios aquí si lo implementas
 ]
