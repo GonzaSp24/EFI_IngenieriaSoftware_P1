@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'vuelos',
     'pasajeros',
     'reservas',
+    'usuarios',
 
 ]
 
