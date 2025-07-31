@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Reserva - Asiento {{ asiento.numero }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-success text-white text-center">
+                <h4 class="mb-0"><i class="fas fa-ticket-alt"></i> Confirmar Reserva de Asiento</h4>
+            </div>
+            <div class="card-body p-4">
+                <h5 class="text-primary mb-3"><i class="fas fa-plane"></i> Detalles del Vuelo</h5>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p><strong>Ruta:</strong> {{ vuelo.origen }} → {{ vuelo.destino }}</p>
+                        <p><strong>Fecha de Salida:</strong> {{ vuelo.fecha_salida|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Avión:</strong> {{ vuelo.avion.modelo }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Asiento Seleccionado:</strong> <span class="badge bg-secondary">{{ asiento.numero }}</span></p>
+                        <p><strong>Tipo de Asiento:</strong> {{ asiento.get_tipo_display }}</p>
+                        <p><strong>Precio Base:</strong> ${{ vuelo.precio_base }}</p>
+                    </div>
+                </div>
+
+                <h5 class="text-primary mb-3"><i class="fas fa-user"></i> Información del Pasajero</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.pasajero.id_for_label }}" class="form-label">Seleccionar Pasajero</label>
+                        {{ form.pasajero }}
+                        {% if form.pasajero.errors %}<div class="text-danger small">{{ form.pasajero.errors }}</div>{% endif %}
+                        <div class="form-text">
+                            ¿El pasajero no está en la lista? <a href="{% url 'registrar_pasajero' %}" target="_blank">Registrar nuevo pasajero aquí</a>.
+                        </div>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger mt-3" role="alert">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-end gap-3 mt-4">
+                        <a href="{% url 'detalle_vuelo' vuelo.pk %}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle"></i> Confirmar Reserva
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

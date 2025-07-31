@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Pasajeros{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-users"></i> Lista de Pasajeros</h2>
+    <a href="{% url 'registro_pasajero' %}" class="btn btn-success">
+        <i class="fas fa-user-plus"></i> Nuevo Pasajero
+    </a>
+</div>
+
+<!-- Búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-9">
+                <input type="text" class="form-control" name="busqueda"
+                       placeholder="Buscar por nombre, documento o email..." value="{{ busqueda }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de pasajeros -->
+{% if page_obj %}
+<div class="row">
+    {% for pasajero in page_obj %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-user"></i> {{ pasajero.nombre }}
+                </h5>
+                <p class="card-text">
+                    <strong>{{ pasajero.get_tipo_documento_display }}:</strong> {{ pasajero.documento }}<br>
+                    <strong>Email:</strong> {{ pasajero.email }}<br>
+                    <strong>Teléfono:</strong> {{ pasajero.telefono }}<br>
+                    <strong>Edad:</strong> {{ pasajero.edad }} años
+                </p>
+                <a href="{% url 'detalle_pasajero' pasajero.id %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-eye"></i> Ver Detalles
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Paginación de pasajeros">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if busqueda %}&busqueda={{ busqueda }}{% endif %}">Primera</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if busqueda %}&busqueda={{ busqueda }}{% endif %}">Anterior</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if busqueda %}&busqueda={{ busqueda }}{% endif %}">Siguiente</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if busqueda %}&busqueda={{ busqueda }}{% endif %}">Última</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center">
+    <i class="fas fa-users fa-5x text-muted mb-3"></i>
+    <h4>No se encontraron pasajeros</h4>
+    <p class="text-muted">No hay pasajeros registrados o que coincidan con la búsqueda.</p>
+    <a href="{% url 'registro_pasajero' %}" class="btn btn-success">
+        <i class="fas fa-user-plus"></i> Registrar Primer Pasajero
+    </a>
+</div>
+{% endif %}
+{% endblock %}

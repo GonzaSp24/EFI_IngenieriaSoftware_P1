@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Pasajero - {{ pasajero.nombre }} {{ pasajero.apellido }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-user"></i> Detalle de Pasajero</h4>
+                <a href="{% url 'lista_pasajeros' %}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-arrow-left"></i> Volver a la lista
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Nombre Completo:</strong> {{ pasajero.nombre }} {{ pasajero.apellido }}</p>
+                        <p><strong>Tipo de Documento:</strong> {{ pasajero.get_tipo_documento_display }}</p>
+                        <p><strong>Número de Documento:</strong> {{ pasajero.documento }}</p>
+                        <p><strong>Fecha de Nacimiento:</strong> {{ pasajero.fecha_nacimiento|date:"d/m/Y" }}</p>
+                        <p><strong>Edad:</strong> {{ pasajero.edad }} años</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Email:</strong> {{ pasajero.email }}</p>
+                        <p><strong>Teléfono:</strong> {{ pasajero.telefono|default:"No especificado" }}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'historial_vuelos_pasajero' pasajero.pk %}" class="btn btn-info me-2">
+                        <i class="fas fa-history"></i> Ver Historial de Vuelos
+                    </a>
+                    <!-- Aquí podrías añadir un botón para editar el pasajero si implementas esa funcionalidad -->
+                    <!-- <a href="#" class="btn btn-warning">Editar Pasajero</a> -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

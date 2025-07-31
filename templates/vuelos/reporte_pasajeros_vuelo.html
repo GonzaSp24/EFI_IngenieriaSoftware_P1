@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Reporte de Pasajeros - {{ vuelo.origen }} → {{ vuelo.destino }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-file-alt"></i> Reporte de Pasajeros</h2>
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+</div>
+
+<!-- Información del vuelo -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">{{ vuelo.origen }} → {{ vuelo.destino }}</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Fecha de Salida:</strong> {{ vuelo.fecha_salida|date:"d/m/Y H:i" }}</p>
+                <p><strong>Fecha de Llegada:</strong> {{ vuelo.fecha_llegada|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Avión:</strong> {{ vuelo.avion.modelo }}</p>
+                <p><strong>Total de Pasajeros:</strong> {{ reservas.count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de pasajeros -->
+{% if reservas %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-users"></i> Lista de Pasajeros</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Asiento</th>
+                        <th>Nombre</th>
+                        <th>Documento</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Código Reserva</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in reservas %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-secondary">{{ reserva.asiento.numero }}</span>
+                        </td>
+                        <td>{{ reserva.pasajero.nombre }}</td>
+                        <td>{{ reserva.pasajero.documento }}</td>
+                        <td>{{ reserva.pasajero.email }}</td>
+                        <td>{{ reserva.pasajero.telefono }}</td>
+                        <td>{{ reserva.codigo_reserva }}</td>
+                        <td>
+                            <span class="badge bg-{% if reserva.estado == 'confirmada' %}success{% elif reserva.estado == 'pendiente' %}warning{% else %}danger{% endif %}">
+                                {{ reserva.get_estado_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> No hay pasajeros registrados para este vuelo.
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{% url 'detalle_vuelo' vuelo.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Vuelo
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style media="print">
+    .btn, .navbar, .footer {
+        display: none !important;
+    }
+</style>
+{% endblock %}

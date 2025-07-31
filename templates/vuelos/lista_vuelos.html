@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Vuelos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-plane-departure"></i> Lista de Vuelos</h2>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="origen" placeholder="Origen" value="{{ origen }}">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="destino" placeholder="Destino" value="{{ destino }}">
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" name="fecha" value="{{ fecha }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de vuelos -->
+{% if page_obj %}
+<div class="row">
+    {% for vuelo in page_obj %}
+    <div class="col-lg-6 mb-4">
+        <div class="card flight-card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    {{ vuelo.origen }} <i class="fas fa-arrow-right text-primary"></i> {{ vuelo.destino }}
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="card-text">
+                            <strong>Salida:</strong> {{ vuelo.fecha_salida|date:"d/m/Y H:i" }}<br>
+                            <strong>Llegada:</strong> {{ vuelo.fecha_llegada|date:"d/m/Y H:i" }}<br>
+                            <strong>Duración:</strong> {{ vuelo.duracion }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="card-text">
+                            <strong>Avión:</strong> {{ vuelo.avion.modelo }}<br>
+                            <strong>Precio:</strong> ${{ vuelo.precio_base }}<br>
+                            <strong>Disponibles:</strong> {{ vuelo.asientos_disponibles }}
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-{% if vuelo.estado == 'programado' %}success{% elif vuelo.estado == 'en_vuelo' %}primary{% else %}secondary{% endif %}">
+                        {{ vuelo.get_estado_display }}
+                    </span>
+                    <a href="{% url 'detalle_vuelo' vuelo.id %}" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> Ver Detalles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Paginación de vuelos">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if origen %}&origen={{ origen }}{% endif %}{% if destino %}&destino={{ destino }}{% endif %}{% if fecha %}&fecha={{ fecha }}{% endif %}">Primera</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if origen %}&origen={{ origen }}{% endif %}{% if destino %}&destino={{ destino }}{% endif %}{% if fecha %}&fecha={{ fecha }}{% endif %}">Anterior</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if origen %}&origen={{ origen }}{% endif %}{% if destino %}&destino={{ destino }}{% endif %}{% if fecha %}&fecha={{ fecha }}{% endif %}">Siguiente</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if origen %}&origen={{ origen }}{% endif %}{% if destino %}&destino={{ destino }}{% endif %}{% if fecha %}&fecha={{ fecha }}{% endif %}">Última</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center">
+    <i class="fas fa-plane-departure fa-5x text-muted mb-3"></i>
+    <h4>No se encontraron vuelos</h4>
+    <p class="text-muted">No hay vuelos que coincidan con los criterios de búsqueda.</p>
+</div>
+{% endif %}
+{% endblock %}

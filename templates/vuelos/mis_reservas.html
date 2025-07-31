@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis Reservas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-ticket-alt"></i> Mis Reservas</h2>
+</div>
+
+{% if reservas %}
+<div class="row">
+    {% for reserva in reservas %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Reserva {{ reserva.codigo_reserva }}</h5>
+                <span class="badge bg-{% if reserva.estado == 'confirmada' %}success{% elif reserva.estado == 'pendiente' %}warning{% else %}danger{% endif %}">
+                    {{ reserva.get_estado_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Vuelo:</strong> {{ reserva.vuelo.origen }} → {{ reserva.vuelo.destino }}</p>
+                        <p><strong>Fecha:</strong> {{ reserva.vuelo.fecha_salida|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Pasajero:</strong> {{ reserva.pasajero.nombre }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Asiento:</strong> {{ reserva.asiento.numero }}</p>
+                        <p><strong>Tipo:</strong> {{ reserva.asiento.get_tipo_display }}</p>
+                        <p><strong>Precio:</strong> ${{ reserva.precio }}</p>
+                    </div>
+                </div>
+                <p><strong>Fecha de Reserva:</strong> {{ reserva.fecha_reserva|date:"d/m/Y H:i" }}</p>
+                
+                {% if reserva.estado == 'confirmada' %}
+                <div class="mt-3">
+                    <a href="{% url 'cancelar_reserva' reserva.id %}" class="btn btn-danger btn-sm">
+                        <i class="fas fa-times"></i> Cancelar Reserva
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center">
+    <i class="fas fa-ticket-alt fa-5x text-muted mb-3"></i>
+    <h4>No tienes reservas</h4>
+    <p class="text-muted">¡Explora nuestros vuelos y haz tu primera reserva!</p>
+    <a href="{% url 'lista_vuelos' %}" class="btn btn-primary">
+        <i class="fas fa-plane-departure"></i> Ver Vuelos
+    </a>
+</div>
+{% endif %}
+{% endblock %}

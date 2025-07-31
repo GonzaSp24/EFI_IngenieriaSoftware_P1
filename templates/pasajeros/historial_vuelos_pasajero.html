@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de Vuelos - {{ pasajero.nombre }} {{ pasajero.apellido }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-history"></i> Historial de Vuelos de {{ pasajero.nombre }} {{ pasajero.apellido }}</h2>
+    <a href="{% url 'detalle_pasajero' pasajero.pk %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Detalle
+    </a>
+</div>
+
+{% if page_obj %}
+<div class="row">
+    {% for reserva in page_obj %}
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Reserva {{ reserva.codigo_reserva }}</h5>
+                <span class="badge bg-{% if reserva.estado == 'confirmada' %}success{% elif reserva.estado == 'pendiente' %}warning{% else %}danger{% endif %}">
+                    {{ reserva.get_estado_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Vuelo:</strong> {{ reserva.vuelo.origen }} → {{ reserva.vuelo.destino }}</p>
+                        <p><strong>Fecha Salida:</strong> {{ reserva.vuelo.fecha_salida|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Fecha Llegada:</strong> {{ reserva.vuelo.fecha_llegada|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Asiento:</strong> {{ reserva.asiento.numero }} ({{ reserva.asiento.get_tipo_display }})</p>
+                        <p><strong>Precio:</strong> ${{ reserva.precio }}</p>
+                        <p><strong>Fecha Reserva:</strong> {{ reserva.fecha_reserva|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <a href="{% url 'detalle_reserva' reserva.codigo_reserva %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-info-circle"></i> Ver Detalles de Reserva
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Paginación de historial">
+    <ul class="pagination justify-content-center mt-4">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">Primera</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info text-center" role="alert">
+    <i class="fas fa-info-circle"></i> Este pasajero no tiene reservas registradas.
+</div>
+{% endif %}
+{% endblock %}

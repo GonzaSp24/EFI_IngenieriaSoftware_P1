@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ vuelo.origen }} → {{ vuelo.destino }} - Detalle del Vuelo{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Información del vuelo -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-plane-departure"></i> 
+                    {{ vuelo.origen }} → {{ vuelo.destino }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Fecha de Salida:</strong> {{ vuelo.fecha_salida|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Fecha de Llegada:</strong> {{ vuelo.fecha_llegada|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Duración:</strong> {{ vuelo.duracion }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Avión:</strong> {{ vuelo.avion.modelo }}</p>
+                        <p><strong>Precio Base:</strong> ${{ vuelo.precio_base }}</p>
+                        <p><strong>Asientos Disponibles:</strong> {{ vuelo.asientos_disponibles }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mapa de asientos -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-th"></i> Seleccionar Asiento</h5>
+            </div>
+            <div class="card-body">
+                <!-- Leyenda -->
+                <div class="mb-3">
+                    <span class="seat disponible me-2"></span> Disponible
+                    <span class="seat ocupado me-2 ms-3"></span> Ocupado
+                </div>
+                
+                <!-- Mapa de asientos -->
+                <div class="text-center">
+                    {% for fila, asientos in asientos_por_fila.items %}
+                    <div class="mb-2">
+                        <span class="me-2 fw-bold">{{ fila }}</span>
+                        {% for item in asientos %}
+                            {% if item.estado == 'disponible' %}
+                                <a href="{% url 'reservar_asiento' vuelo.id item.asiento.id %}" 
+                                    class="seat disponible {{ item.asiento.tipo }}" 
+                                    title="Asiento {{ item.asiento.numero }} - {{ item.asiento.get_tipo_display }}">
+                                    {{ item.asiento.numero }}
+                                </a>
+                            {% else %}
+                                <span class="seat ocupado {{ item.asiento.tipo }}" 
+                                        title="Ocupado por {{ item.pasajero.nombre }}">
+                                    {{ item.asiento.numero }}
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Información adicional -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Estado del Vuelo:</strong> 
+                    <span class="badge bg-success">{{ vuelo.get_estado_display }}</span>
+                </p>
+                <p><strong>Capacidad Total:</strong> {{ vuelo.avion.capacidad }} asientos</p>
+                <p><strong>Configuración:</strong> {{ vuelo.avion.filas }} filas × {{ vuelo.avion.columnas }} columnas</p>
+            </div>
+        </div>
+
+        <!-- Tipos de asiento -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chair"></i> Tipos de Asiento</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="seat primera me-2"></span>
+                    <strong>Primera Clase</strong> - Filas 1-3
+                </div>
+                <div class="mb-2">
+                    <span class="seat ejecutiva me-2"></span>
+                    <strong>Clase Ejecutiva</strong> - Filas 4-10
+                </div>
+                <div class="mb-2">
+                    <span class="seat economica me-2"></span>
+                    <strong>Clase Económica</strong> - Filas 11+
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs"></i> Acciones</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'reporte_pasajeros_vuelo' vuelo.id %}" class="btn btn-info btn-sm mb-2 w-100">
+                    <i class="fas fa-file-alt"></i> Reporte de Pasajeros
+                </a>
+                <a href="{% url 'lista_vuelos' %}" class="btn btn-secondary btn-sm w-100">
+                    <i class="fas fa-arrow-left"></i> Volver a Vuelos
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
