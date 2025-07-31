@@ -4,32 +4,8 @@ Script para configurar la base de datos con datos de ejemplo
 
 import os
 import sys
-import django
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-
-# Configuración de Django
-project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(project_path)
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aerolinea_project.settings')
-
-try:
-    django.setup()
-    print("✅ Django configurado correctamente")
-except Exception as e:
-    print(f"❌ Error configurando Django: {e}")
-    sys.exit(1)
-
-# Importación de modelos (corregido para evitar importaciones circulares)
-try:
-    from vuelos.models import Avion, Vuelo, Asiento
-    from pasajeros.models import Pasajero
-    from reservas.models import Reserva, Boleto
-    from usuarios.models import CustomUser
-    print("✅ Modelos importados correctamente")
-except ImportError as e:
-    print(f"❌ Error importando modelos: {e}")
-    sys.exit(1)
 
 def crear_asientos_para_avion(avion):
     print(f"✈️ Generando asientos para: {avion.modelo}")
@@ -175,4 +151,18 @@ def crear_datos_ejemplo():
     print("   Admin panel: http://localhost:8000/admin/")
 
 if __name__ == '__main__':
+    # Configuración inicial de Django
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aerolinea_project.settings')
+    import django
+    django.setup()
+
+    from django.core.management import call_command
+    call_command('migrate')
+
+    # Importar modelos después del setup
+    from vuelos.models import Avion, Vuelo, Asiento
+    from pasajeros.models import Pasajero
+    from reservas.models import Reserva, Boleto
+    from usuarios.models import CustomUser
+
     crear_datos_ejemplo()

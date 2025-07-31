@@ -73,7 +73,11 @@ WSGI_APPLICATION = 'aerolinea_project.wsgi.application'
 #}
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',  # por si no hay DATABASE_URL
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 # Password validation
