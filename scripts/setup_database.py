@@ -156,19 +156,27 @@ def crear_datos_ejemplo():
         asiento = vuelo.avion.asiento_set.filter(estado='disponible').first()
 
         if asiento:
-            reserva = Reserva.objects.create(
+            reserva, creada = Reserva.objects.get_or_create(
                 vuelo=vuelo,
                 pasajero=pasajero,
-                asiento=asiento,
-                precio=vuelo.precio_base,
-                estado='confirmada'
+                defaults={
+                    'asiento': asiento,
+                    'precio': vuelo.precio_base,
+                    'estado': 'confirmada',
+                    'fecha_reserva': timezone.now()
+                }
             )
-            asiento.estado = 'ocupado'
-            asiento.save()
-            Boleto.objects.create(reserva=reserva)
-            print(f"🎟️  Reserva creada: {reserva.codigo_reserva} para {pasajero.nombre}")
+
+            if creada:
+                asiento.estado = 'ocupado'
+                asiento.save()
+                Boleto.objects.create(reserva=reserva)
+                print(f"🎟️  Reserva creada: {reserva.codigo_reserva} para {pasajero.nombre}")
+            else:
+                print(f"⚠️  Ya existía una reserva para {pasajero.nombre} en el vuelo {vuelo}")
         else:
             print(f"⚠️  No hay asientos disponibles para el vuelo {vuelo}")
+
 
     # Resumen
     print("\n📊 Resumen:")
