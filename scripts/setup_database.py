@@ -4,15 +4,49 @@ Script para configurar la base de datos con datos de ejemplo
 
 import os
 import sys
+import django
 from datetime import datetime, timedelta, date
 from decimal import Decimal
+from django.core.management import call_command
+
+# Configuración de Django
+project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_path)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aerolinea_project.settings')
+
+try:
+    django.setup()
+    print("✅ Django configurado correctamente")
+except Exception as e:
+    print(f"❌ Error configurando Django: {e}")
+    sys.exit(1)
+
+# Aplicar migraciones antes de cargar modelos y crear datos
+try:
+    call_command('migrate', interactive=False)
+    print("✅ Migraciones aplicadas correctamente")
+except Exception as e:
+    print(f"❌ Error aplicando migraciones: {e}")
+    sys.exit(1)
+
+# Importación de modelos (después de django.setup y migraciones)
+try:
+    from vuelos.models import Avion, Vuelo, Asiento
+    from pasajeros.models import Pasajero
+    from reservas.models import Reserva, Boleto
+    from usuarios.models import CustomUser
+    print("✅ Modelos importados correctamente")
+except ImportError as e:
+    print(f"❌ Error importando modelos: {e}")
+    sys.exit(1)
+
 
 def crear_asientos_para_avion(avion):
     print(f"✈️ Generando asientos para: {avion.modelo}")
 
     for fila in range(1, avion.filas + 1):
         for col_idx in range(avion.columnas):
-            columna = chr(65 + col_idx)  # Letras A, B, C, ...
+            columna = chr(65 + col_idx)
             numero = f"{fila}{columna}"
 
             tipo = (
@@ -35,6 +69,7 @@ def crear_asientos_para_avion(avion):
                 print(f"  ➕ Creado asiento {numero}")
             else:
                 print(f"  ✅ Ya existe asiento {numero}")
+
 
 def crear_datos_ejemplo():
     print("\n🚀 Iniciando creación de datos de ejemplo...\n")
@@ -150,19 +185,6 @@ def crear_datos_ejemplo():
     print("   Web: http://localhost:8000/")
     print("   Admin panel: http://localhost:8000/admin/")
 
+
 if __name__ == '__main__':
-    # Configuración inicial de Django
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aerolinea_project.settings')
-    import django
-    django.setup()
-
-    from django.core.management import call_command
-    call_command('migrate')
-
-    # Importar modelos después del setup
-    from vuelos.models import Avion, Vuelo, Asiento
-    from pasajeros.models import Pasajero
-    from reservas.models import Reserva, Boleto
-    from usuarios.models import CustomUser
-
     crear_datos_ejemplo()
