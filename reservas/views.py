@@ -8,89 +8,166 @@ from .forms import ReservaForm
 
 @login_required
 def crear_reserva(request, vuelo_id, asiento_id):
-    """Vista para crear una nueva reserva."""
+    """Permite al usuario crear una reserva para un vuelo y asiento específicos."""
     vuelo = get_object_or_404(Vuelo, pk=vuelo_id)
     asiento = get_object_or_404(Asiento, pk=asiento_id)
-
-    # Validaciones
+    
+    # Verificar que el usuario tenga un perfil de pasajero
+    try:
+        mi_pasajero = request.user.pasajero
+    except Pasajero.DoesNotExist:
+        messages.error(request, 'Primero debes completar tu perfil de pasajero para poder reservar.')
+        return redirect('registrar_pasajero')
+    
+    # Validaciones iniciales
     if asiento.avion != vuelo.avion:
-        messages.error(request, 'El asiento seleccionado no pertenece a este vuelo.')
-        return redirect('detalle_vuelo', pk=vuelo_id)
+        messages.error(request, 'El asiento seleccionado no pertenece al avión de este vuelo.')
+        return redirect('detalle_vuelo', pk=vuelo.pk)
     
-    if asiento.estado != 'disponible':
-        messages.error(request, f'El asiento {asiento.numero} ya está {asiento.get_estado_display()}.')
-        return redirect('detalle_vuelo', pk=vuelo_id)
+    if Reserva.objects.filter(vuelo=vuelo, asiento=asiento, estado='confirmada').exists():
+        messages.error(request, 'Este asiento ya está ocupado para este vuelo.')
+        return redirect('detalle_vuelo', pk=vuelo.pk)
     
-    # Verificar si el usuario ya tiene una reserva para este vuelo (opcional, según reglas de negocio)
-    # if Reserva.objects.filter(vuelo=vuelo, pasajero__usuario=request.user).exists():
-    #     messages.warning(request, 'Ya tienes una reserva para este vuelo.')
-    #     return redirect('mis_reservas')
-
+    # Verificar si el usuario ya tiene una reserva para este vuelo
+    if Reserva.objects.filter(vuelo=vuelo, pasajero=mi_pasajero, estado='confirmada').exists():
+        messages.error(request, 'Ya tienes una reserva confirmada para este vuelo.')
+        return redirect('detalle_vuelo', pk=vuelo.pk)
+    
     if request.method == 'POST':
-        form = ReservaForm(request.POST)
-        if form.is_valid():
-            pasajero = form.cleaned_data['pasajero']
-            
-            # Verificar si el pasajero ya tiene una reserva para este vuelo
-            if Reserva.objects.filter(vuelo=vuelo, pasajero=pasajero).exists():
-                messages.error(request, f'El pasajero {pasajero.nombre} {pasajero.apellido} ya tiene una reserva para este vuelo.')
-                return redirect('detalle_vuelo', pk=vuelo_id)
-
-            reserva = form.save(commit=False)
-            reserva.vuelo = vuelo
-            reserva.asiento = asiento
-            reserva.precio = vuelo.precio_base # O calcular precio según tipo de asiento, etc.
-            reserva.estado = 'confirmada' # O 'pendiente' si se requiere pago
-            reserva.save()
-            
-            # Crear boleto automáticamente
+        # Para usuarios normales, siempre reservar para sí mismos
+        if request.user.is_staff or request.user.is_superuser:
+            # Los admin pueden elegir pasajero
+            form = ReservaForm(request.POST)
+            if form.is_valid():
+                pasajero = form.cleaned_data['pasajero']
+            else:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"Error en {field}: {error}")
+                return render(request, 'reservas/crear_reserva.html', {
+                    'vuelo': vuelo,
+                    'asiento': asiento,
+                    'form': form,
+                    'es_admin': True,
+                })
+        else:
+            # Usuario normal: reservar para sí mismo
+            pasajero = mi_pasajero
+        
+        try:
+            reserva = Reserva.objects.create(
+                vuelo=vuelo,
+                pasajero=pasajero,
+                asiento=asiento,
+                precio=vuelo.precio_base,
+                estado='confirmada'
+            )
             Boleto.objects.create(reserva=reserva)
-            
-            messages.success(request, f'Reserva confirmada para el asiento {asiento.numero}. Código: {reserva.codigo_reserva}')
-            return redirect('mis_reservas')
+            messages.success(request, f'¡Reserva confirmada exitosamente! Código: {reserva.codigo_reserva}')
+            return redirect('detalle_reserva', codigo_reserva=reserva.codigo_reserva)
+        except Exception as e:
+            messages.error(request, f'Error al crear la reserva: {e}')
+            return redirect('detalle_vuelo', pk=vuelo.pk)
     else:
-        form = ReservaForm()
+        if request.user.is_staff or request.user.is_superuser:
+            form = ReservaForm()
+            es_admin = True
+        else:
+            form = None
+            es_admin = False
     
     return render(request, 'reservas/crear_reserva.html', {
         'vuelo': vuelo,
         'asiento': asiento,
-        'form': form
+        'form': form,
+        'mi_pasajero': mi_pasajero,
+        'es_admin': es_admin,
     })
 
 @login_required
-def mis_reservas(request):
-    """Vista para listar las reservas del usuario actual."""
-    # En un sistema real, filtrarías por el pasajero asociado al usuario logueado
-    # Por simplicidad, aquí listamos todas las reservas confirmadas
-    reservas = Reserva.objects.filter(estado='confirmada').order_by('-fecha_reserva')
-    
-    return render(request, 'reservas/mis_reservas.html', {'reservas': reservas})
-
-@login_required
 def detalle_reserva(request, codigo_reserva):
-    """Vista para ver los detalles de una reserva específica."""
+    """Muestra los detalles de una reserva específica."""
     reserva = get_object_or_404(Reserva, codigo_reserva=codigo_reserva)
+    
+    # Verificar permisos: solo el dueño de la reserva o admin pueden verla
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not hasattr(request.user, 'pasajero') or reserva.pasajero != request.user.pasajero:
+            messages.error(request, 'No tienes permisos para ver esta reserva.')
+            return redirect('mis_reservas')
+    
     return render(request, 'reservas/detalle_reserva.html', {'reserva': reserva})
 
 @login_required
 def generar_boleto(request, codigo_reserva):
-    """Vista para generar el boleto electrónico."""
+    """Genera y muestra el boleto electrónico para una reserva."""
     reserva = get_object_or_404(Reserva, codigo_reserva=codigo_reserva)
+    
+    # Verificar permisos: solo el dueño de la reserva o admin pueden ver el boleto
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not hasattr(request.user, 'pasajero') or reserva.pasajero != request.user.pasajero:
+            messages.error(request, 'No tienes permisos para ver este boleto.')
+            return redirect('mis_reservas')
+    
     boleto = get_object_or_404(Boleto, reserva=reserva)
     return render(request, 'reservas/boleto_electronico.html', {'boleto': boleto})
 
 @login_required
-def cancelar_reserva(request, codigo_reserva):
-    """Vista para cancelar una reserva."""
-    reserva = get_object_or_404(Reserva, codigo_reserva=codigo_reserva)
+def mis_reservas(request):
+    """Muestra las reservas del usuario logueado."""
+    if request.user.is_staff or request.user.is_superuser:
+        # Admin ve todas las reservas
+        reservas = Reserva.objects.filter(estado='confirmada').order_by('-fecha_reserva')
+        es_admin = True
+        messages.info(request, 'Mostrando todas las reservas (vista de administrador)')
+    else:
+        # Usuario normal ve solo sus reservas
+        try:
+            mi_pasajero = request.user.pasajero
+            reservas = Reserva.objects.filter(pasajero=mi_pasajero).order_by('-fecha_reserva')
+            es_admin = False
+        except Pasajero.DoesNotExist:
+            reservas = Reserva.objects.none()
+            es_admin = False
+            messages.info(request, 'Primero debes completar tu perfil de pasajero para ver tus reservas.')
+    
+    return render(request, 'reservas/mis_reservas.html', {
+        'reservas': reservas,
+        'es_admin': es_admin,
+    })
+
+@login_required
+def cancelar_reserva(request, pk):
+    """Permite cancelar una reserva."""
+    reserva = get_object_or_404(Reserva, pk=pk)
+    
+    # Verificar permisos: solo el dueño de la reserva o admin pueden cancelarla
+    puede_cancelar = False
+    if request.user.is_staff or request.user.is_superuser:
+        puede_cancelar = True
+    elif hasattr(request.user, 'pasajero') and reserva.pasajero == request.user.pasajero:
+        puede_cancelar = True
+    
+    if not puede_cancelar:
+        messages.error(request, 'No tienes permisos para cancelar esta reserva.')
+        return redirect('mis_reservas')
     
     if request.method == 'POST':
         if reserva.estado == 'confirmada':
             reserva.estado = 'cancelada'
             reserva.save()
-            messages.info(request, f'La reserva {codigo_reserva} ha sido cancelada.')
+            
+            # Anular boleto si existe
+            try:
+                boleto = Boleto.objects.get(reserva=reserva)
+                boleto.estado = 'anulado'
+                boleto.save()
+            except Boleto.DoesNotExist:
+                pass
+            
+            messages.success(request, f'La reserva {reserva.codigo_reserva} ha sido cancelada.')
         else:
-            messages.warning(request, f'La reserva {codigo_reserva} no puede ser cancelada en su estado actual ({reserva.get_estado_display()}).')
-        return redirect('mis_reservas')
+            messages.warning(request, f'La reserva {reserva.codigo_reserva} no puede ser cancelada en su estado actual.')
         
+        return redirect('mis_reservas')
+    
     return render(request, 'reservas/cancelar_reserva.html', {'reserva': reserva})

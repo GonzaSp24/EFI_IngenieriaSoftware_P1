@@ -1,6 +1,8 @@
 from django.db import models
 from pasajeros.models import Pasajero
 import uuid
+import random
+import string
 
 class Reserva(models.Model):
     vuelo = models.ForeignKey('vuelos.Vuelo', on_delete=models.CASCADE, related_name='reservas')
@@ -25,15 +27,23 @@ class Reserva(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.codigo_reserva:
-            self.codigo_reserva = str(uuid.uuid4())[:8].upper()
-        # Importación local para evitar circular import
-        if self.estado == 'confirmada' and self.asiento.estado != 'ocupado':
+            self.codigo_reserva = self._generar_codigo_reserva()
+        super().save(*args, **kwargs)
+        
+        # Actualizar estado del asiento después de guardar la reserva
+        if self.estado == 'confirmada':
             self.asiento.estado = 'ocupado'
             self.asiento.save()
-        elif self.estado == 'cancelada' and self.asiento.estado != 'disponible':
+        elif self.estado == 'cancelada':
             self.asiento.estado = 'disponible'
             self.asiento.save()
-        super().save(*args, **kwargs)
+
+    def _generar_codigo_reserva(self):
+        """Genera un código único de reserva de 8 caracteres"""
+        while True:
+            codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            if not Reserva.objects.filter(codigo_reserva=codigo).exists():
+                return codigo
 
     def __str__(self):
         return f"Reserva {self.codigo_reserva} - Vuelo {self.vuelo.origen}-{self.vuelo.destino} - Pasajero {self.pasajero.nombre} {self.pasajero.apellido}"

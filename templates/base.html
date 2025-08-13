@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AeroSystem{% endblock %}</title>
-    <!-- Bootstrap CSS (CDN) -->
+    <title>{% block title %}RutaCeleste{% endblock %}</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <!-- Font Awesome (CDN) para iconos -->
+    <!-- Font Awesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         body {
@@ -23,84 +23,104 @@
         .footer {
             background-color: #f8f9fa;
             padding: 20px 0;
+            margin-top: auto;
             border-top: 1px solid #e9ecef;
-            text-align: center;
-            margin-top: auto; /* Empuja el footer hacia abajo */
-        }
-        /* Estilos para los asientos */
-        .seat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); /* Ajusta el número de columnas */
-            gap: 5px;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            background-color: #fdfdfd;
         }
         .seat-row {
-            display: flex;
-            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .seats-container {
+            min-height: 45px;
             align-items: center;
-            margin-bottom: 5px;
         }
-        .seat-label {
-            font-weight: bold;
-            margin-right: 10px;
-            width: 30px; /* Ancho fijo para las etiquetas de fila */
-            text-align: right;
+
+        .row-number {
+            font-size: 14px;
+            text-align: center;
         }
+
+        .aisle {
+            width: 20px;
+            height: 2px;
+            background-color: #ddd;
+            margin: 0 10px;
+        }
+
         .seat {
-            width: 40px;
-            height: 40px;
-            border-radius: 5px;
-            display: flex;
+            width: 35px;
+            height: 35px;
+            margin: 1px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8em;
+            font-size: 11px;
             font-weight: bold;
-            color: white;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
-            text-decoration: none; /* Para los enlaces de asiento */
+            text-decoration: none;
+            color: inherit;
         }
+
         .seat.disponible {
-            background-color: #28a745; /* Verde */
-            border: 1px solid #218838;
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
         }
+
         .seat.ocupado {
-            background-color: #dc3545; /* Rojo */
-            border: 1px solid #c82333;
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
             cursor: not-allowed;
-            opacity: 0.7;
+            opacity: 0.8;
         }
-        .seat.reservado { /* Si se usa un estado intermedio */
-            background-color: #ffc107; /* Amarillo */
-            border: 1px solid #e0a800;
-        }
-        .seat:hover:not(.ocupado) {
-            transform: scale(1.05);
-            box-shadow: 0 0 8px rgba(0,0,0,0.2);
-        }
-        /* Colores de borde para tipos de asiento */
+
         .seat.primera {
-            border: 2px solid #007bff; /* Azul */
+            border-width: 3px;
+            border-color: #ffc107;
         }
+
         .seat.ejecutivo {
-            border: 2px solid #6c757d; /* Gris */
+            border-width: 3px;
+            border-color: #17a2b8;
         }
+
         .seat.economico {
-            border: 2px solid #17a2b8; /* Cian */
+            border-width: 2px;
         }
-        .flight-card {
-            transition: transform 0.2s ease-in-out;
+
+        .seat.disponible:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
         }
-        .flight-card:hover {
+        .flight-card, .passenger-card, .reservation-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .flight-card:hover, .passenger-card:hover, .reservation-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .card-header-primary {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .card-header-success {
+            background-color: #198754;
+            color: white;
+        }
+        .card-header-info {
+            background-color: #0dcaf0;
+            color: white;
+        }
+        .card-header-warning {
+            background-color: #ffc107;
+            color: #212529;
         }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <!-- Navegación -->
@@ -115,26 +135,49 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">
                             <i class="fas fa-home"></i> Inicio
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'lista_vuelos' %}">
+                        <a class="nav-link {% if 'vuelos' in request.path %}active{% endif %}" href="{% url 'lista_vuelos' %}">
                             <i class="fas fa-plane-departure"></i> Vuelos
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'lista_pasajeros' %}">
-                            <i class="fas fa-users"></i> Pasajeros
-                        </a>
-                    </li>
+                    
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'mis_reservas' %}">
-                            <i class="fas fa-ticket-alt"></i> Mis Reservas
-                        </a>
-                    </li>
+                        <!-- Opciones para usuarios normales -->
+                        {% if not user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'mi-perfil' in request.path or 'registrar' in request.path %}active{% endif %}" href="{% if user.pasajero %}{% url 'mi_perfil_pasajero' %}{% else %}{% url 'registrar_pasajero' %}{% endif %}">
+                                <i class="fas fa-user"></i> Mi Perfil
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'mis-reservas' in request.path %}active{% endif %}" href="{% url 'mis_reservas' %}">
+                                <i class="fas fa-ticket-alt"></i> Mis Reservas
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Opciones solo para administradores -->
+                        {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'pasajeros' in request.path %}active{% endif %}" href="{% url 'lista_pasajeros' %}">
+                                <i class="fas fa-users"></i> Pasajeros
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'mis-reservas' in request.path %}active{% endif %}" href="{% url 'mis_reservas' %}">
+                                <i class="fas fa-ticket-alt"></i> Todas las Reservas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'registrar' in request.path %}active{% endif %}" href="{% url 'registrar_pasajero' %}">
+                                <i class="fas fa-user-plus"></i> Registrar Pasajero
+                            </a>
+                        </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
@@ -142,8 +185,15 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user-circle"></i> {{ user.username }}
+                                {% if user.is_staff %}
+                                    <span class="badge bg-warning text-dark ms-1">Admin</span>
+                                {% endif %}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                {% if not user.is_staff %}
+                                <li><a class="dropdown-item" href="{% if user.pasajero %}{% url 'mi_perfil_pasajero' %}{% else %}{% url 'registrar_pasajero' %}{% endif %}"><i class="fas fa-user"></i> Mi Perfil</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% endif %}
                                 {% if user.is_staff %}
                                 <li><a class="dropdown-item" href="/admin/"><i class="fas fa-cog"></i> Panel Admin</a></li>
                                 <li><hr class="dropdown-divider"></li>
@@ -153,12 +203,12 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}">
                                 <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'registro_usuario' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}" href="{% url 'register' %}">
                                 <i class="fas fa-user-plus"></i> Registrarse
                             </a>
                         </li>
@@ -188,21 +238,16 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6 text-md-start text-center mb-2 mb-md-0">
-                    <p class="mb-0 text-muted">&copy; 2025 RutaCeleste. Todos los derechos reservados.</p>
-                </div>
-                <div class="col-md-6 text-md-end text-center">
-                    <a href="#" class="text-muted me-3"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="text-muted me-3"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="text-muted"><i class="fab fa-instagram"></i></a>
-                </div>
-            </div>
+        <div class="container text-center">
+            <p class="mb-0 text-muted">
+                &copy; 2024 RutaCeleste. Todos los derechos reservados.
+                <br>
+                <i class="fas fa-code"></i> Desarrollado para Evaluación Final Integradora.
+            </p>
         </div>
     </footer>
 
-    <!-- Bootstrap Bundle with Popper (CDN) - Solo para componentes CSS que requieren JS como dropdowns y alerts -->
+    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     {% block extra_js %}{% endblock %}
 </body>

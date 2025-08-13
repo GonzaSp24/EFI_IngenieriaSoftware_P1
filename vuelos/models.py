@@ -14,9 +14,37 @@ class Avion(models.Model):
     def __str__(self):
         return f"{self.modelo} ({self.capacidad} asientos)"
     
-    def asientos_disponibles_count(self):
-        """Retorna el número de asientos disponibles"""
-        return self.asiento_set.filter(estado='disponible').count()
+    def save(self, *args, **kwargs):
+        # Calcular capacidad automáticamente
+        self.capacidad = self.filas * self.columnas
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new:
+            self.crear_asientos()
+    
+    def crear_asientos(self):
+        """Crear asientos automáticamente cuando se crea un avión"""
+        for fila in range(1, self.filas + 1):
+            for col_idx in range(self.columnas):
+                columna_letra = chr(65 + col_idx)  # A, B, C, D, E, F
+                numero_asiento = f"{fila}{columna_letra}"
+                
+                # Determinar tipo de asiento según la fila
+                if fila <= 3:
+                    tipo = 'primera'
+                elif fila <= 10:
+                    tipo = 'ejecutivo'
+                else:
+                    tipo = 'economico'
+                
+                Asiento.objects.create(
+                    avion=self,
+                    numero=numero_asiento,
+                    fila=fila,
+                    columna=columna_letra,
+                    tipo=tipo,
+                    estado='disponible'  # IMPORTANTE: Crear como disponible
+                )
 
 class Vuelo(models.Model):
     avion = models.ForeignKey(Avion, on_delete=models.PROTECT)
@@ -44,10 +72,37 @@ class Vuelo(models.Model):
         return f"Vuelo de {self.origen} a {self.destino} ({self.fecha_salida.strftime('%Y-%m-%d %H:%M')})"
     
     def asientos_disponibles_count(self):
+        """Retorna el número de asientos disponibles para este vuelo"""
         total_asientos = self.avion.capacidad
         reservados = self.reservas.filter(estado='confirmada').count()
         return total_asientos - reservados
-
+    
+    def get_asientos_con_estado_para_vuelo(self):
+        """Retorna todos los asientos del avión con su estado para este vuelo"""
+        asientos_info = []
+        
+        for asiento in self.avion.asiento_set.all().order_by('fila', 'columna'):
+            # Verificar si hay una reserva confirmada para este asiento en este vuelo
+            reserva_confirmada = self.reservas.filter(
+                asiento=asiento, 
+                estado='confirmada'
+            ).first()
+            
+            if reserva_confirmada:
+                estado_vuelo = 'ocupado'
+                pasajero = reserva_confirmada.pasajero
+            else:
+                estado_vuelo = 'disponible'
+                pasajero = None
+            
+            asientos_info.append({
+                'asiento': asiento,
+                'estado_vuelo': estado_vuelo,  # Este es el estado para este vuelo específico
+                'pasajero': pasajero,
+                'reserva': reserva_confirmada
+            })
+        
+        return asientos_info
 
 class Asiento(models.Model):
     avion = models.ForeignKey(Avion, on_delete=models.CASCADE)

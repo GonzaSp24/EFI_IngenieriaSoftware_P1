@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Perfil - {{ pasajero.nombre }} {{ pasajero.apellido }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary"><i class="fas fa-user"></i> Mi Perfil de Pasajero</h2>
+    <a href="{% url 'editar_mi_perfil' %}" class="btn btn-primary">
+        <i class="fas fa-edit"></i> Editar Perfil
+    </a>
+</div>
+
+<!-- Información del Pasajero -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-primary">
+        <h4 class="mb-0">{{ pasajero.nombre }} {{ pasajero.apellido }}</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1"><strong><i class="fas fa-id-card"></i> Documento:</strong> {{ pasajero.get_tipo_documento_display }} - {{ pasajero.documento }}</p>
+                <p class="mb-1"><strong><i class="fas fa-envelope"></i> Email:</strong> {{ pasajero.email }}</p>
+                <p class="mb-1"><strong><i class="fas fa-phone"></i> Teléfono:</strong> {{ pasajero.telefono|default:"N/A" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1"><strong><i class="fas fa-birthday-cake"></i> Fecha de Nacimiento:</strong> {{ pasajero.fecha_nacimiento|date:"d/m/Y" }}</p>
+                <p class="mb-1"><strong><i class="fas fa-user-tag"></i> Edad:</strong> {{ pasajero.edad }} años</p>
+                <p class="mb-1"><strong><i class="fas fa-user-circle"></i> Usuario:</strong> {{ pasajero.usuario.username }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mis Reservas -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header card-header-info">
+        <h5 class="mb-0"><i class="fas fa-ticket-alt"></i> Mis Reservas ({{ reservas.count }})</h5>
+    </div>
+    <div class="card-body">
+        {% if reservas %}
+        <div class="row row-cols-1 row-cols-md-2 g-3">
+            {% for reserva in reservas %}
+            <div class="col">
+                <div class="card reservation-card h-100 shadow-sm border-{% if reserva.estado == 'confirmada' %}success{% elif reserva.estado == 'pendiente' %}warning{% else %}danger{% endif %}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ reserva.codigo_reserva }}</h6>
+                        <span class="badge bg-{% if reserva.estado == 'confirmada' %}success{% elif reserva.estado == 'pendiente' %}warning{% else %}danger{% endif %}">
+                            {{ reserva.get_estado_display }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Vuelo:</strong> {{ reserva.vuelo.origen }} → {{ reserva.vuelo.destino }}</p>
+                        <p class="mb-1"><strong>Fecha:</strong> {{ reserva.vuelo.fecha_salida|date:"d/m/Y H:i" }}</p>
+                        <p class="mb-1"><strong>Asiento:</strong> {{ reserva.asiento.numero|default:"N/A" }}</p>
+                        <p class="mb-1"><strong>Precio:</strong> ${{ reserva.precio }}</p>
+                        
+                        <div class="mt-2 d-flex gap-2">
+                            <a href="{% url 'detalle_reserva' reserva.codigo_reserva %}" class="btn btn-info btn-sm">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                            {% if reserva.estado == 'confirmada' %}
+                            <a href="{% url 'generar_boleto' reserva.codigo_reserva %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-ticket-alt"></i> Boleto
+                            </a>
+                            <a href="{% url 'cancelar_reserva' reserva.pk %}" class="btn btn-danger btn-sm">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <i class="fas fa-info-circle"></i> No tienes reservas registradas.
+            <div class="mt-2">
+                <a href="{% url 'lista_vuelos' %}" class="btn btn-primary">
+                    <i class="fas fa-plane-departure"></i> Buscar Vuelos
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

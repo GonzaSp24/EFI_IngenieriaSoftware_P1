@@ -1,46 +1,58 @@
 {% extends 'base.html' %}
 
-{% block title %}Bienvenido a AeroSystem{% endblock %}
+{% block title %}Inicio - RutaCeleste{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
+<div class="row">
+    <div class="col-lg-10 mx-auto">
         <!-- Hero Section -->
         <div class="text-center mb-5 p-4 bg-light rounded shadow-sm">
             <h1 class="display-4 text-primary mb-3">
                 <i class="fas fa-plane-departure"></i> Bienvenido a RutaCeleste
             </h1>
-            <p class="lead">Tu plataforma integral para la gestión de vuelos y reservas.</p>
+            <p class="lead text-muted">Tu plataforma integral para la gestión de aerolíneas y reservas de vuelos.</p>
             <hr class="my-4">
-            <p>Explora nuestros vuelos, gestiona tus reservas y mantente al tanto de toda la información de tu viaje.</p>
-            <a href="{% url 'lista_vuelos' %}" class="btn btn-primary btn-lg mt-3">
-                <i class="fas fa-search"></i> Buscar Vuelos Ahora
-            </a>
+            <p class="text-muted">Encuentra y reserva tu vuelo ideal de forma rápida y sencilla.</p>
         </div>
 
-        <!-- Sección de Búsqueda Rápida -->
-        <div class="card shadow mb-5">
-            <div class="card-header bg-info text-white">
-                <h4 class="mb-0"><i class="fas fa-filter"></i> Búsqueda Rápida de Vuelos</h4>
+        <!-- Formulario de búsqueda de vuelos -->
+        <div class="card shadow-lg mb-5">
+            <div class="card-header card-header-primary text-center py-3">
+                <h4 class="mb-0"><i class="fas fa-search"></i> Buscar Vuelos</h4>
             </div>
-            <div class="card-body">
-                <form method="get" action="{% url 'lista_vuelos' %}">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label for="id_origen" class="form-label visually-hidden">Origen</label>
-                            <input type="text" class="form-control" id="id_origen" name="origen" placeholder="Origen">
+                            <label for="{{ form.origen.id_for_label }}" class="form-label fw-bold">Origen</label>
+                            {{ form.origen }}
+                            <div class="form-text">Deja vacío para ver todos los orígenes</div>
+                            {% if form.origen.errors %}<div class="text-danger small mt-1">{{ form.origen.errors }}</div>{% endif %}
                         </div>
                         <div class="col-md-4">
-                            <label for="id_destino" class="form-label visually-hidden">Destino</label>
-                            <input type="text" class="form-control" id="id_destino" name="destino" placeholder="Destino">
+                            <label for="{{ form.destino.id_for_label }}" class="form-label fw-bold">Destino</label>
+                            {{ form.destino }}
+                            <div class="form-text">Deja vacío para ver todos los destinos</div>
+                            {% if form.destino.errors %}<div class="text-danger small mt-1">{{ form.destino.errors }}</div>{% endif %}
                         </div>
                         <div class="col-md-4">
-                            <label for="id_fecha_salida" class="form-label visually-hidden">Fecha de Salida</label>
-                            <input type="date" class="form-control" id="id_fecha_salida" name="fecha_salida">
+                            <label for="{{ form.fecha_salida.id_for_label }}" class="form-label fw-bold">Fecha de Salida</label>
+                            {{ form.fecha_salida }}
+                            {% if form.fecha_salida.errors %}<div class="text-danger small mt-1">{{ form.fecha_salida.errors }}</div>{% endif %}
                         </div>
                     </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger small mt-3" role="alert">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
                     <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-info btn-lg">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
                             <i class="fas fa-search"></i> Buscar Vuelos
                         </button>
                     </div>
@@ -48,35 +60,118 @@
             </div>
         </div>
 
-        <!-- Secciones de Acceso Rápido -->
-        <div class="row text-center">
-            <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm">
+        <!-- Resultados de búsqueda exacta -->
+        {% if vuelos %}
+        <div class="mt-4">
+            <h3 class="mb-4 text-success"><i class="fas fa-check-circle"></i> Vuelos Encontrados</h3>
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for vuelo in vuelos %}
+                <div class="col">
+                    <div class="card flight-card h-100 shadow-sm border-success">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">
+                                {{ vuelo.origen }} <i class="fas fa-arrow-right text-secondary"></i> {{ vuelo.destino }}
+                            </h5>
+                            <p class="card-text mb-1">
+                                <strong><i class="far fa-calendar-alt"></i> Salida:</strong> {{ vuelo.fecha_salida|date:"d/m/Y H:i" }}<br>
+                                <strong><i class="far fa-clock"></i> Llegada:</strong> {{ vuelo.fecha_llegada|date:"d/m/Y H:i" }}<br>
+                                <strong><i class="fas fa-hourglass-half"></i> Duración:</strong> {{ vuelo.duracion }}
+                            </p>
+                            <p class="card-text mb-3">
+                                <strong><i class="fas fa-plane"></i> Avión:</strong> {{ vuelo.avion.modelo }}<br>
+                                <strong><i class="fas fa-dollar-sign"></i> Precio:</strong> ${{ vuelo.precio_base }}<br>
+                                <strong><i class="fas fa-chair"></i> Asientos disponibles:</strong> {{ vuelo.asientos_disponibles_count }}
+                            </p>
+                            <div class="d-grid">
+                                <a href="{% url 'detalle_vuelo' vuelo.id %}" class="btn btn-success">
+                                    <i class="fas fa-info-circle"></i> Ver Detalles
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Vuelos alternativos si no hay exactos -->
+        {% elif vuelos_alternativos and busqueda_realizada %}
+        <div class="mt-4">
+            <div class="alert alert-info text-center mb-4" role="alert">
+                <i class="fas fa-info-circle"></i> No encontramos vuelos para la fecha exacta, pero aquí tienes opciones en fechas cercanas:
+            </div>
+            <h3 class="mb-4 text-info"><i class="fas fa-calendar-alt"></i> Vuelos en Fechas Cercanas (±3 días)</h3>
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for vuelo in vuelos_alternativos %}
+                <div class="col">
+                    <div class="card flight-card h-100 shadow-sm border-info">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">
+                                {{ vuelo.origen }} <i class="fas fa-arrow-right text-secondary"></i> {{ vuelo.destino }}
+                            </h5>
+                            <p class="card-text mb-1">
+                                <strong><i class="far fa-calendar-alt"></i> Salida:</strong> {{ vuelo.fecha_salida|date:"d/m/Y H:i" }}<br>
+                                <strong><i class="far fa-clock"></i> Llegada:</strong> {{ vuelo.fecha_llegada|date:"d/m/Y H:i" }}<br>
+                                <strong><i class="fas fa-hourglass-half"></i> Duración:</strong> {{ vuelo.duracion }}
+                            </p>
+                            <p class="card-text mb-3">
+                                <strong><i class="fas fa-plane"></i> Avión:</strong> {{ vuelo.avion.modelo }}<br>
+                                <strong><i class="fas fa-dollar-sign"></i> Precio:</strong> ${{ vuelo.precio_base }}<br>
+                                <strong><i class="fas fa-chair"></i> Asientos disponibles:</strong> {{ vuelo.asientos_disponibles_count }}
+                            </p>
+                            <div class="d-grid">
+                                <a href="{% url 'detalle_vuelo' vuelo.id %}" class="btn btn-info">
+                                    <i class="fas fa-info-circle"></i> Ver Detalles
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% elif busqueda_realizada %}
+        <div class="alert alert-warning text-center mt-4 shadow-sm" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> No se encontraron vuelos para los criterios especificados, ni en fechas cercanas.
+        </div>
+        {% endif %}
+
+        <!-- Accesos rápidos -->
+        <div class="row mt-5 g-4">
+            <div class="col-md-4">
+                <div class="card text-center h-100 shadow-sm">
                     <div class="card-body">
-                        <i class="fas fa-plane-departure fa-4x text-primary mb-3"></i>
-                        <h5 class="card-title">Explorar Vuelos</h5>
-                        <p class="card-text">Encuentra tu próximo destino y las mejores ofertas.</p>
-                        <a href="{% url 'lista_vuelos' %}" class="btn btn-outline-primary mt-2">Ver Vuelos</a>
+                        <i class="fas fa-list-alt fa-4x text-info mb-3"></i>
+                        <h5 class="card-title">Ver Todos los Vuelos</h5>
+                        <p class="card-text text-muted">Explora la lista completa de vuelos programados.</p>
+                        <a href="{% url 'lista_vuelos' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-eye"></i> Ver Vuelos
+                        </a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm">
+            <div class="col-md-4">
+                <div class="card text-center h-100 shadow-sm">
                     <div class="card-body">
-                        <i class="fas fa-ticket-alt fa-4x text-success mb-3"></i>
-                        <h5 class="card-title">Mis Reservas</h5>
-                        <p class="card-text">Consulta y gestiona tus reservas existentes.</p>
-                        <a href="{% url 'mis_reservas' %}" class="btn btn-outline-success mt-2">Ver Reservas</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <i class="fas fa-user-plus fa-4x text-info mb-3"></i>
+                        <i class="fas fa-user-plus fa-4x text-success mb-3"></i>
                         <h5 class="card-title">Registrar Pasajero</h5>
-                        <p class="card-text">Crea un perfil de pasajero para futuras reservas.</p>
-                        <a href="{% url 'registrar_pasajero' %}" class="btn btn-outline-info mt-2">Registrar</a>
+                        <p class="card-text text-muted">Añade nuevos pasajeros al sistema.</p>
+                        <a href="{% url 'registrar_pasajero' %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-user-plus"></i> Registrar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100 shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-4x text-secondary mb-3"></i>
+                        <h5 class="card-title">Gestionar Pasajeros</h5>
+                        <p class="card-text text-muted">Consulta y administra la información de los pasajeros.</p>
+                        <a href="{% url 'lista_pasajeros' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-list"></i> Ver Lista
+                        </a>
                     </div>
                 </div>
             </div>
