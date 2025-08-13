@@ -1,0 +1,246 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-13 10:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "RutaCeleste - Sistema de Aerolínea"
+msgstr "RutaCeleste - Sistema de Aerolínea"
+
+msgid "RutaCeleste - Inicio"
+msgstr "RutaCeleste - Inicio"
+
+msgid "Bienvenido a RutaCeleste"
+msgstr "Bienvenido a RutaCeleste"
+
+msgid "Tu aerolínea de confianza para volar por toda Argentina"
+msgstr "Tu aerolínea de confianza para volar por toda Argentina"
+
+msgid "Registrarse"
+msgstr "Registrarse"
+
+msgid "Iniciar Sesión"
+msgstr "Iniciar Sesión"
+
+msgid "Ver Vuelos"
+msgstr "Ver Vuelos"
+
+msgid "Mis Reservas"
+msgstr "Mis Reservas"
+
+msgid "Próximos Vuelos"
+msgstr "Próximos Vuelos"
+
+msgid "Salida"
+msgstr "Salida"
+
+msgid "Llegada"
+msgstr "Llegada"
+
+msgid "Desde"
+msgstr "Desde"
+
+msgid "Avión"
+msgstr "Avión"
+
+msgid "Ver Detalles"
+msgstr "Ver Detalles"
+
+msgid "Iniciar Sesión para Reservar"
+msgstr "Iniciar Sesión para Reservar"
+
+msgid "Buscar Vuelos"
+msgstr "Buscar Vuelos"
+
+msgid "Vuelos Próximos"
+msgstr "Vuelos Próximos"
+
+msgid "Fecha"
+msgstr "Fecha"
+
+msgid "Hora"
+msgstr "Hora"
+
+msgid "Precio desde"
+msgstr "Precio desde"
+
+msgid "Asientos"
+msgstr "Asientos"
+
+msgid "Ver Todos los Vuelos"
+msgstr "Ver Todos los Vuelos"
+
+msgid "¿Por qué elegir RutaCeleste?"
+msgstr "¿Por qué elegir RutaCeleste?"
+
+msgid "Puntualidad"
+msgstr "Puntualidad"
+
+msgid "Nos comprometemos con la puntualidad en todos nuestros vuelos"
+msgstr "Más del 95% de nuestros vuelos salen a tiempo. Tu tiempo es valioso para nosotros."
+
+msgid "Seguridad"
+msgstr "Seguridad"
+
+msgid "Tu seguridad es nuestra prioridad número uno"
+msgstr "Flota moderna y mantenimiento de primera clase. Tu seguridad es nuestra prioridad."
+
+msgid "Comodidad"
+msgstr "Comodidad"
+
+msgid "Disfruta de un viaje cómodo con nuestro servicio de primera"
+msgstr "Asientos cómodos, entretenimiento a bordo y el mejor servicio de atención al cliente."
+
+msgid "Nuestros Destinos"
+msgstr "Nuestros Destinos"
+
+msgid "Destinos Populares"
+msgstr "Destinos Populares"
+
+msgid "Buenos Aires"
+msgstr "Buenos Aires"
+
+msgid "La capital que nunca duerme"
+msgstr "La capital que nunca duerme"
+
+msgid "Córdoba"
+msgstr "Córdoba"
+
+msgid "Historia y cultura"
+msgstr "Historia y cultura"
+
+msgid "Mendoza"
+msgstr "Mendoza"
+
+msgid "Tierra de vinos"
+msgstr "Tierra de vinos"
+
+msgid "Bariloche"
+msgstr "Bariloche"
+
+msgid "Naturaleza y aventura"
+msgstr "Naturaleza y aventura"
+
+msgid "Inicio"
+msgstr "Inicio"
+
+msgid "Vuelos"
+msgstr "Vuelos"
+
+msgid "Mi Perfil"
+msgstr "Mi Perfil"
+
+msgid "Administración"
+msgstr "Administración"
+
+msgid "Pasajeros"
+msgstr "Pasajeros"
+
+msgid "Panel Admin"
+msgstr "Panel Admin"
+
+msgid "Cerrar Sesión"
+msgstr "Cerrar Sesión"
+
+msgid "Tu sistema de gestión de aerolínea de confianza"
+msgstr "Tu sistema de gestión de aerolínea de confianza"
+
+msgid "Todos los derechos reservados"
+msgstr "Todos los derechos reservados"
+
+msgid "¿Listo para volar?"
+msgstr "¿Listo para volar?"
+
+msgid "Únete a miles de pasajeros que confían en RutaCeleste"
+msgstr "Únete a miles de pasajeros que confían en RutaCeleste"
+
+msgid "Crear Cuenta"
+msgstr "Crear Cuenta"
+
+msgid "Mis Reservas - RutaCeleste"
+msgstr "Mis Reservas - RutaCeleste"
+
+msgid "Estado"
+msgstr "Estado"
+
+msgid "Confirmada"
+msgstr "Confirmada"
+
+msgid "Pendiente"
+msgstr "Pendiente"
+
+msgid "Pasajero:"
+msgstr "Pasajero:"
+
+msgid "Asiento:"
+msgstr "Asiento:"
+
+msgid "Precio:"
+msgstr "Precio:"
+
+msgid "Fecha Reserva:"
+msgstr "Fecha Reserva:"
+
+msgid "Nueva Reserva"
+msgstr "Nueva Reserva"
+
+msgid "Reserva"
+msgstr "Reserva"
+
+msgid "Clase"
+msgstr "Clase"
+
+msgid "Precio Total"
+msgstr "Precio Total"
+
+msgid "Reservado el"
+msgstr "Reservado el"
+
+msgid "Ver"
+msgstr "Ver"
+
+msgid "Cancelar"
+msgstr "Cancelar"
+
+msgid "¿Estás seguro de que quieres cancelar esta reserva?"
+msgstr "¿Estás seguro de que quieres cancelar esta reserva?"
+
+msgid "Navegación de reservas"
+msgstr "Navegación de reservas"
+
+msgid "Primera"
+msgstr "Primera"
+
+msgid "Anterior"
+msgstr "Anterior"
+
+msgid "Página"
+msgstr "Página"
+
+msgid "de"
+msgstr "de"
+
+msgid "Siguiente"
+msgstr "Siguiente"
+
+msgid "Última"
+msgstr "Última"
+
+msgid "No tienes reservas aún"
+msgstr "No tienes reservas aún"
+
+msgid "¡Es hora de planificar tu próximo viaje!"
+msgstr "¡Es hora de planificar tu próximo viaje!"

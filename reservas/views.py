@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import HttpResponse
 from .models import Reserva, Boleto
 from vuelos.models import Vuelo, Asiento
 from pasajeros.models import Pasajero
 from .forms import ReservaForm
+from .utils import enviar_boleto_email, generar_respuesta_pdf
 
 @login_required
 def crear_reserva(request, vuelo_id, asiento_id):
@@ -62,8 +64,16 @@ def crear_reserva(request, vuelo_id, asiento_id):
                 precio=vuelo.precio_base,
                 estado='confirmada'
             )
-            Boleto.objects.create(reserva=reserva)
-            messages.success(request, f'¡Reserva confirmada exitosamente! Código: {reserva.codigo_reserva}')
+            boleto = Boleto.objects.create(reserva=reserva)
+            
+            # 📧 AQUÍ ES DONDE SE ENVÍA EL EMAIL AUTOMÁTICAMENTE
+            success, message = enviar_boleto_email(reserva)
+            if success:
+                messages.success(request, f'¡Reserva confirmada exitosamente! Código: {reserva.codigo_reserva}. {message}')
+            else:
+                messages.success(request, f'¡Reserva confirmada exitosamente! Código: {reserva.codigo_reserva}')
+                messages.warning(request, f'Advertencia: {message}')
+            
             return redirect('detalle_reserva', codigo_reserva=reserva.codigo_reserva)
         except Exception as e:
             messages.error(request, f'Error al crear la reserva: {e}')
@@ -110,6 +120,39 @@ def generar_boleto(request, codigo_reserva):
     
     boleto = get_object_or_404(Boleto, reserva=reserva)
     return render(request, 'reservas/boleto_electronico.html', {'boleto': boleto})
+
+@login_required
+def descargar_boleto_pdf(request, codigo_reserva):
+    """Descarga el boleto como PDF"""
+    reserva = get_object_or_404(Reserva, codigo_reserva=codigo_reserva)
+    
+    # Verificar permisos
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not hasattr(request.user, 'pasajero') or reserva.pasajero != request.user.pasajero:
+            messages.error(request, 'No tienes permisos para descargar este boleto.')
+            return redirect('mis_reservas')
+    
+    return generar_respuesta_pdf(reserva)
+
+@login_required
+def reenviar_boleto_email(request, codigo_reserva):
+    """Reenvía el boleto por email"""
+    reserva = get_object_or_404(Reserva, codigo_reserva=codigo_reserva)
+    
+    # Verificar permisos
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not hasattr(request.user, 'pasajero') or reserva.pasajero != request.user.pasajero:
+            messages.error(request, 'No tienes permisos para reenviar este boleto.')
+            return redirect('mis_reservas')
+    
+    # 📧 AQUÍ ES DONDE SE REENVÍA EL EMAIL MANUALMENTE
+    success, message = enviar_boleto_email(reserva)
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+    
+    return redirect('detalle_reserva', codigo_reserva=codigo_reserva)
 
 @login_required
 def mis_reservas(request):

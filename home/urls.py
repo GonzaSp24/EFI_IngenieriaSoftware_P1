@@ -1,6 +1,5 @@
 from django.urls import path
 from home.views import (
-    HomeView,
     LoginView,
     LogoutView,
     RegisterView

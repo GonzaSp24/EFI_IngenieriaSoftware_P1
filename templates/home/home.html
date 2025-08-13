@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "RutaCeleste - Inicio" %}{% endblock %}
+
+{% block content %}
+<div class="hero-section bg-primary text-white py-5 mb-5 rounded">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-3">
+            <i class="fas fa-plane me-3"></i>
+            {% trans "Bienvenido a RutaCeleste" %}
+        </h1>
+        <p class="lead mb-4">
+            {% trans "Tu aerolínea de confianza para volar por toda Argentina" %}
+        </p>
+        {% if not user.is_authenticated %}
+            <div class="d-flex gap-3 justify-content-center">
+                <a href="{% url 'register' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>
+                    {% trans "Registrarse" %}
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    {% trans "Iniciar Sesión" %}
+                </a>
+            </div>
+        {% else %}
+            <a href="{% url 'lista_vuelos' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-search me-2"></i>
+                {% trans "Buscar Vuelos" %}
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Sección de vuelos próximos -->
+{% if vuelos_proximos %}
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-calendar-alt me-2"></i>
+            {% trans "Próximos Vuelos" %}
+        </h2>
+        <div class="row">
+            {% for vuelo in vuelos_proximos %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card flight-card h-100 shadow-sm">
+                    <div class="card-header card-header-primary">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-route me-2"></i>
+                            {{ vuelo.origen }} → {{ vuelo.destino }}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <small class="text-muted">{% trans "Fecha" %}</small>
+                                <div class="fw-bold">{{ vuelo.fecha_salida|date:"d/m/Y" }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">{% trans "Hora" %}</small>
+                                <div class="fw-bold">{{ vuelo.hora_salida|time:"H:i" }}</div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <small class="text-muted">{% trans "Precio desde" %}</small>
+                                <div class="fw-bold text-success">${{ vuelo.precio_base|floatformat:0 }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">{% trans "Asientos" %}</small>
+                                <div class="fw-bold">{{ vuelo.asientos_disponibles }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if user.is_authenticated %}
+                    <div class="card-footer">
+                        <a href="{% url 'detalle_vuelo' vuelo.id %}" class="btn btn-primary btn-sm w-100">
+                            <i class="fas fa-eye me-2"></i>
+                            {% trans "Ver Detalles" %}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if user.is_authenticated %}
+        <div class="text-center">
+            <a href="{% url 'lista_vuelos' %}" class="btn btn-outline-primary">
+                <i class="fas fa-plane-departure me-2"></i>
+                {% trans "Ver Todos los Vuelos" %}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Sección de características -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-star me-2"></i>
+            {% trans "¿Por qué elegir RutaCeleste?" %}
+        </h2>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-clock fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Puntualidad" %}</h5>
+                        <p class="card-text">
+                            {% trans "Más del 95% de nuestros vuelos salen a tiempo. Tu tiempo es valioso para nosotros." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-success mb-3">
+                            <i class="fas fa-shield-alt fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Seguridad" %}</h5>
+                        <p class="card-text">
+                            {% trans "Flota moderna y mantenimiento de primera clase. Tu seguridad es nuestra prioridad." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-info mb-3">
+                            <i class="fas fa-heart fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Comodidad" %}</h5>
+                        <p class="card-text">
+                            {% trans "Asientos cómodos, entretenimiento a bordo y el mejor servicio de atención al cliente." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de destinos -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-map-marker-alt me-2"></i>
+            {% trans "Destinos Populares" %}
+        </h2>
+        <div class="row">
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-city fa-2x text-primary mb-3"></i>
+                        <h6 class="card-title">{% trans "Buenos Aires" %}</h6>
+                        <p class="card-text small">{% trans "La capital que nunca duerme" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-mountain fa-2x text-success mb-3"></i>
+                        <h6 class="card-title">{% trans "Bariloche" %}</h6>
+                        <p class="card-text small">{% trans "Naturaleza y aventura" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-wine-glass fa-2x text-danger mb-3"></i>
+                        <h6 class="card-title">{% trans "Mendoza" %}</h6>
+                        <p class="card-text small">{% trans "Tierra de vinos" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-university fa-2x text-warning mb-3"></i>
+                        <h6 class="card-title">{% trans "Córdoba" %}</h6>
+                        <p class="card-text small">{% trans "Historia y cultura" %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Call to Action -->
+{% if not user.is_authenticated %}
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body text-center py-5">
+                <h3 class="card-title">{% trans "¿Listo para volar?" %}</h3>
+                <p class="card-text lead">{% trans "Únete a miles de pasajeros que confían en RutaCeleste" %}</p>
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-user-plus me-2"></i>
+                    {% trans "Crear Cuenta" %}
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    {% trans "Iniciar Sesión" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

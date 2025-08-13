@@ -1,0 +1,243 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-13 10:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "RutaCeleste - Sistema de Aerolínea"
+msgstr "RutaCeleste - Airline System"
+
+msgid "RutaCeleste - Inicio"
+msgstr "RutaCeleste - Home"
+
+msgid "Bienvenido a RutaCeleste"
+msgstr "Welcome to RutaCeleste"
+
+msgid "Tu aerolínea de confianza para volar por toda Argentina"
+msgstr "Your trusted airline to fly throughout Argentina"
+
+msgid "Registrarse"
+msgstr "Register"
+
+msgid "Iniciar Sesión"
+msgstr "Login"
+
+msgid "Ver Vuelos"
+msgstr "View Flights"
+
+msgid "Mis Reservas"
+msgstr "My Reservations"
+
+msgid "Vuelos Próximos"
+msgstr "Upcoming Flights"
+
+msgid "Salida"
+msgstr "Departure"
+
+msgid "Llegada"
+msgstr "Arrival"
+
+msgid "Desde"
+msgstr "From"
+
+msgid "Avión"
+msgstr "Aircraft"
+
+msgid "Ver Detalles"
+msgstr "View Details"
+
+msgid "Iniciar Sesión para Reservar"
+msgstr "Sign In to Book"
+
+msgid "¿Por qué elegir RutaCeleste?"
+msgstr "Why choose RutaCeleste?"
+
+msgid "Puntualidad"
+msgstr "Punctuality"
+
+msgid "Más del 95% de nuestros vuelos salen a tiempo. Tu tiempo es valioso para nosotros."
+msgstr "More than 95% of our flights depart on time. Your time is valuable to us."
+
+msgid "Seguridad"
+msgstr "Safety"
+
+msgid "Flota moderna y mantenimiento de primera clase. Tu seguridad es nuestra prioridad."
+msgstr "Modern fleet and first-class maintenance. Your safety is our priority."
+
+msgid "Comodidad"
+msgstr "Comfort"
+
+msgid "Asientos cómodos, entretenimiento a bordo y el mejor servicio de atención al cliente."
+msgstr "Comfortable seats, onboard entertainment and the best customer service."
+
+msgid "Nuestros Destinos"
+msgstr "Our Destinations"
+
+msgid "Destinos Populares"
+msgstr "Popular Destinations"
+
+msgid "Buenos Aires"
+msgstr "Buenos Aires"
+
+msgid "La capital que nunca duerme"
+msgstr "The capital that never sleeps"
+
+msgid "Córdoba"
+msgstr "Córdoba"
+
+msgid "Historia y cultura"
+msgstr "History and culture"
+
+msgid "Mendoza"
+msgstr "Mendoza"
+
+msgid "Tierra de vinos"
+msgstr "Land of wines"
+
+msgid "Bariloche"
+msgstr "Bariloche"
+
+msgid "Naturaleza y aventura"
+msgstr "Nature and adventure"
+
+msgid "Inicio"
+msgstr "Home"
+
+msgid "Vuelos"
+msgstr "Flights"
+
+msgid "Mi Perfil"
+msgstr "My Profile"
+
+msgid "Administración"
+msgstr "Administration"
+
+msgid "Pasajeros"
+msgstr "Passengers"
+
+msgid "Panel Admin"
+msgstr "Admin Panel"
+
+msgid "Cerrar Sesión"
+msgstr "Logout"
+
+msgid "Tu sistema de gestión de aerolínea de confianza"
+msgstr "Your trusted airline management system"
+
+msgid "Todos los derechos reservados"
+msgstr "All rights reserved"
+
+msgid "Mis Reservas - RutaCeleste"
+msgstr "My Reservations - RutaCeleste"
+
+msgid "Estado"
+msgstr "Status"
+
+msgid "Confirmada"
+msgstr "Confirmed"
+
+msgid "Pendiente"
+msgstr "Pending"
+
+msgid "Pasajero:"
+msgstr "Passenger:"
+
+msgid "Asiento:"
+msgstr "Seat:"
+
+msgid "Precio:"
+msgstr "Price:"
+
+msgid "Fecha Reserva:"
+msgstr "Booking Date:"
+
+msgid "Buscar Vuelos"
+msgstr "Search Flights"
+
+msgid "Ver Todos los Vuelos"
+msgstr "View All Flights"
+
+msgid "Fecha"
+msgstr "Date"
+
+msgid "Hora"
+msgstr "Time"
+
+msgid "Precio desde"
+msgstr "Price from"
+
+msgid "Asientos"
+msgstr "Seats"
+
+msgid "Nueva Reserva"
+msgstr "New Reservation"
+
+msgid "Reserva"
+msgstr "Reservation"
+
+msgid "Clase"
+msgstr "Class"
+
+msgid "Precio Total"
+msgstr "Total Price"
+
+msgid "Reservado el"
+msgstr "Reserved on"
+
+msgid "Ver"
+msgstr "View"
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "¿Estás seguro de que quieres cancelar esta reserva?"
+msgstr "Are you sure you want to cancel this reservation?"
+
+msgid "Navegación de reservas"
+msgstr "Reservation navigation"
+
+msgid "Primera"
+msgstr "First"
+
+msgid "Anterior"
+msgstr "Previous"
+
+msgid "Página"
+msgstr "Page"
+
+msgid "de"
+msgstr "of"
+
+msgid "Siguiente"
+msgstr "Next"
+
+msgid "Última"
+msgstr "Last"
+
+msgid "No tienes reservas aún"
+msgstr "You don't have any reservations yet"
+
+msgid "¡Es hora de planificar tu próximo viaje!"
+msgstr "It's time to plan your next trip!"
+
+msgid "¿Listo para volar?"
+msgstr "Ready to fly?"
+
+msgid "Únete a miles de pasajeros que confían en RutaCeleste"
+msgstr "Join thousands of passengers who trust RutaCeleste"
+
+msgid "Crear Cuenta"
+msgstr "Create Account"

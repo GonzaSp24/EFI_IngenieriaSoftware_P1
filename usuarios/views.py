@@ -4,17 +4,17 @@ from django.contrib import messages
 from .forms import CustomUserCreationForm
 
 def registro_usuario(request):
-    """Vista para el registro de nuevos usuarios."""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user) # Inicia sesión al usuario automáticamente
+            login(request, user)
             messages.success(request, '¡Cuenta creada exitosamente! Bienvenido a AeroSystem.')
-            return redirect('home') # Redirige a la página de inicio
+            return redirect('home')
         else:
-            # Si el formulario no es válido, los errores se mostrarán en la plantilla
-            pass
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error en {field}: {error}")
     else:
         form = CustomUserCreationForm()
     return render(request, 'registration/registro.html', {'form': form})

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boleto Electrónico - RutaCeleste</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .ticket {
+            border: 2px solid #0d6efd;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .ticket-header {
+            background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        .ticket-body {
+            padding: 30px;
+            background: white;
+        }
+        .flight-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .city {
+            text-align: center;
+            flex: 1;
+        }
+        .city-code {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .city-name {
+            font-size: 14px;
+            color: #666;
+        }
+        .flight-arrow {
+            flex: 0 0 60px;
+            text-align: center;
+            font-size: 24px;
+            color: #0d6efd;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        .barcode {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .barcode-lines {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            letter-spacing: 2px;
+            color: #333;
+        }
+        .important-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket">
+        <div class="ticket-header">
+            <h1>✈️ RutaCeleste</h1>
+            <h2>Boleto Electrónico</h2>
+            <p>Código de Reserva: <strong>{{ reserva.codigo_reserva }}</strong></p>
+        </div>
+        
+        <div class="ticket-body">
+            <!-- Información del Pasajero -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 10px;">
+                    👤 Información del Pasajero
+                </h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Nombre Completo</div>
+                        <div class="info-value">{{ reserva.pasajero.nombre }} {{ reserva.pasajero.apellido }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Documento</div>
+                        <div class="info-value">{{ reserva.pasajero.tipo_documento }} {{ reserva.pasajero.numero_documento }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del Vuelo -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 10px;">
+                    ✈️ Detalles del Vuelo
+                </h3>
+                
+                <div class="flight-info">
+                    <div class="city">
+                        <div class="city-code">{{ reserva.vuelo.origen|slice:":3"|upper }}</div>
+                        <div class="city-name">{{ reserva.vuelo.origen }}</div>
+                        <div style="margin-top: 10px; font-size: 14px;">
+                            <strong>{{ reserva.vuelo.fecha_salida|date:"H:i" }}</strong><br>
+                            {{ reserva.vuelo.fecha_salida|date:"d/m/Y" }}
+                        </div>
+                    </div>
+                    
+                    <div class="flight-arrow">
+                        ✈️
+                    </div>
+                    
+                    <div class="city">
+                        <div class="city-code">{{ reserva.vuelo.destino|slice:":3"|upper }}</div>
+                        <div class="city-name">{{ reserva.vuelo.destino }}</div>
+                        <div style="margin-top: 10px; font-size: 14px;">
+                            <strong>{{ reserva.vuelo.fecha_llegada|date:"H:i" }}</strong><br>
+                            {{ reserva.vuelo.fecha_llegada|date:"d/m/Y" }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Asiento</div>
+                        <div class="info-value">{{ reserva.asiento.numero }} ({{ reserva.asiento.get_clase_display }})</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Avión</div>
+                        <div class="info-value">{{ reserva.vuelo.avion.modelo }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Duración</div>
+                        <div class="info-value">{{ reserva.vuelo.duracion }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Estado</div>
+                        <div class="info-value">{{ reserva.get_estado_display }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Código de Barras -->
+            <div class="barcode">
+                <div class="info-label">Código de Barras</div>
+                <div class="barcode-lines">||||| |||| | |||| ||||| || ||| ||||</div>
+                <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                    {{ reserva.codigo_reserva }}
+                </div>
+            </div>
+
+            <!-- Información Importante -->
+            <div class="important-info">
+                <h4 style="margin-top: 0; color: #856404;">⚠️ Información Importante</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>Llegue al aeropuerto al menos 2 horas antes del vuelo</li>
+                    <li>Presente este boleto electrónico y su documento de identidad</li>
+                    <li>Verifique las restricciones de equipaje en nuestro sitio web</li>
+                    <li>Para cambios o cancelaciones, contacte a nuestro servicio al cliente</li>
+                </ul>
+            </div>
+
+            <!-- Información de Contacto -->
+            <div style="margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 10px;">
+                <h4 style="margin-top: 0; color: #1976d2;">📞 Contacto</h4>
+                <p style="margin: 5px 0;"><strong>Teléfono:</strong> +54 11 4000-0000</p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> soporte@rutaceleste.com</p>
+                <p style="margin: 5px 0;"><strong>Web:</strong> www.rutaceleste.com</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; 2024 RutaCeleste. Todos los derechos reservados.</p>
+        <p>¡Que tengas un excelente viaje!</p>
+    </div>
+</body>
+</html>

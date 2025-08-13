@@ -1,28 +1,22 @@
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from .models import CustomUser
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from .models import CustomUser
 
 class CustomUserCreationForm(UserCreationForm):
-    rol = forms.ChoiceField(choices=CustomUser.rol_choices, widget=forms.Select(attrs={'class': 'form-control'}))
-    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(required=True, help_text='Requerido. Ingresa una dirección de correo válida.')
+    rol = forms.ChoiceField(choices=CustomUser.rol_choices, initial='cliente', widget=forms.Select(attrs={'class': 'form-control'}))
 
     class Meta(UserCreationForm.Meta):
         model = CustomUser
         fields = UserCreationForm.Meta.fields + ('email', 'rol',)
-        widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'password': forms.PasswordInput(attrs={'class': 'form-control'}),
-            'password2': forms.PasswordInput(attrs={'class': 'form-control'}),
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Asegurar que todos los campos tengan la clase 'form-control'
         for field_name in self.fields:
-            if field_name not in ['password', 'password2', 'email', 'rol']: # Ya tienen widgets específicos
-                self.fields[field_name].widget.attrs.update({'class': 'form-control'})
-
-class CustomUserChangeForm(UserChangeForm):
-    class Meta:
-        model = CustomUser
-        fields = UserChangeForm.Meta.fields
+            field = self.fields[field_name]
+            if field_name != 'password2': # No aplicar a la confirmación de contraseña si no es necesario
+                field.widget.attrs['class'] = 'form-control'
+            if field_name == 'email':
+                field.widget.attrs['placeholder'] = 'tu.email@ejemplo.com'
+            elif field_name == 'username':
+                field.widget.attrs['placeholder'] = 'nombredeusuario'

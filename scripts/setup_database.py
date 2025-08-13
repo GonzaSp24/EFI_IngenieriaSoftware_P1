@@ -1,13 +1,13 @@
 """
-Script mejorado para configurar la base de datos con validaciones
-Evita duplicados y valida datos existentes
-Optimizado para Render con timezone support
+Script mejorado para configurar la base de datos con validaciones y timezone-aware
+Evita duplicados y valida datos existentes - Optimizado para Render
 """
 import os
 import sys
 import django
 from datetime import datetime, timedelta, date
 from decimal import Decimal
+from django.utils import timezone
 
 # Configurar Django
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,15 +21,88 @@ except Exception as e:
     print(f"❌ Error configurando Django: {e}")
     sys.exit(1)
 
-# Importar modelos y timezone
+def verificar_dependencias():
+    """Verificar que las dependencias necesarias estén instaladas"""
+    print("📦 Verificando dependencias...")
+    dependencias_faltantes = []
+    
+    try:
+        import reportlab
+        print("✅ ReportLab instalado")
+    except ImportError:
+        print("❌ ReportLab no instalado")
+        dependencias_faltantes.append("reportlab==4.2.2")
+    
+    try:
+        from PIL import Image
+        print("✅ Pillow instalado")
+    except ImportError:
+        print("❌ Pillow no instalado")
+        dependencias_faltantes.append("Pillow==10.4.0")
+    
+    try:
+        import qrcode
+        print("✅ QRCode instalado")
+    except ImportError:
+        print("❌ QRCode no instalado")
+        dependencias_faltantes.append("qrcode==7.4.2")
+    
+    if dependencias_faltantes:
+        print(f"\n⚠️  DEPENDENCIAS FALTANTES:")
+        print(f"   Ejecuta: pip install {' '.join(dependencias_faltantes)}")
+        return False
+    else:
+        print("✅ Todas las dependencias están instaladas")
+        return True
+
+def probar_pdf_email():
+    """Probar la funcionalidad de PDF y email"""
+    print("🧪 Probando funcionalidad de PDF y Email...")
+    
+    try:
+        from reservas.models import Reserva
+        reserva = Reserva.objects.filter(estado='confirmada').first()
+        
+        if not reserva:
+            print("⚠️  No hay reservas confirmadas para probar")
+            return
+        
+        print(f"📋 Probando con boleto: {reserva.codigo_reserva}")
+        
+        try:
+            from reservas.utils import generar_pdf_boleto, enviar_boleto_email
+            print("✅ Utilidades de reservas importadas correctamente")
+            
+            # Probar PDF
+            pdf_content = generar_pdf_boleto(reserva)
+            if pdf_content:
+                print(f"✅ PDF generado correctamente ({len(pdf_content)} bytes)")
+            else:
+                print("❌ Error generando PDF")
+            
+            # Probar email
+            try:
+                resultado = enviar_boleto_email(reserva)
+                if resultado:
+                    print("✅ Email enviado correctamente")
+                else:
+                    print("⚠️  Email no enviado (configuración opcional)")
+            except Exception as e:
+                print(f"⚠️  Error enviando email: {e}")
+                
+        except ImportError as e:
+            print(f"❌ Error importando utilidades: {e}")
+            
+    except Exception as e:
+        print(f"❌ Error en prueba de PDF/Email: {e}")
+
+# Importar modelos
 try:
     from vuelos.models import Avion, Vuelo, Asiento
     from pasajeros.models import Pasajero
     from reservas.models import Reserva, Boleto
     from django.contrib.auth.models import User
     from django.db import connection
-    from django.utils import timezone
-    from django.conf import settings
     print("✅ Modelos importados correctamente")
 except ImportError as e:
     print(f"❌ Error importando modelos: {e}")
@@ -73,7 +146,7 @@ def crear_usuarios():
     if not User.objects.filter(username='admin').exists():
         User.objects.create_superuser(
             username='admin',
-            email='admin@aerolinea.com',
+            email='admin@rutaceleste.com',
             password='admin123'
         )
         print("✅ Superusuario creado: admin/admin123")
@@ -85,7 +158,7 @@ def crear_usuarios():
     usuarios_ejemplo = [
         {
             'username': 'empleado1', 
-            'email': 'empleado@aerolinea.com', 
+            'email': 'empleado@rutaceleste.com', 
             'password': 'emp123'
         },
         {
@@ -184,11 +257,8 @@ def crear_vuelos(aviones):
     """Crear vuelos con validaciones y timezone-aware datetimes"""
     print("🛫 Verificando/Creando vuelos...")
     
-    # Usar timezone-aware datetime para evitar warnings
-    if settings.USE_TZ:
-        base_date = timezone.now().replace(hour=8, minute=0, second=0, microsecond=0)
-    else:
-        base_date = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0)
+    # Usar timezone.now() para fechas timezone-aware
+    base_date = timezone.now().replace(hour=8, minute=0, second=0, microsecond=0)
     
     vuelos_data = [
         {
@@ -406,14 +476,21 @@ def mostrar_fechas_vuelos():
     if vuelos.exists():
         print(f"\n📅 VUELOS PROGRAMADOS:")
         for vuelo in vuelos:
-            # Formatear fecha según timezone
-            if settings.USE_TZ and hasattr(vuelo.fecha_salida, 'astimezone'):
-                fecha_local = vuelo.fecha_salida.astimezone()
-                print(f"   • {vuelo.origen} -> {vuelo.destino}: {fecha_local.date()} a las {fecha_local.time()}")
-            else:
-                print(f"   • {vuelo.origen} -> {vuelo.destino}: {vuelo.fecha_salida.date()} a las {vuelo.fecha_salida.time()}")
+            print(f"   • {vuelo.origen} -> {vuelo.destino}: {vuelo.fecha_salida.date()} a las {vuelo.fecha_salida.time()}")
     else:
         print(f"\n⚠️  No hay vuelos programados")
+
+def mostrar_urls_acceso():
+    """Mostrar URLs de acceso según el entorno"""
+    if os.getenv('RENDER'):
+        base_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME', 'rutaceleste.onrender.com')}"
+        print(f"\n🌐 URLS DE ACCESO (PRODUCCIÓN):")
+        print(f"   • Aplicación: {base_url}/")
+        print(f"   • Panel Admin: {base_url}/admin/")
+    else:
+        print(f"\n🌐 URLS DE ACCESO (DESARROLLO):")
+        print(f"   • Aplicación: http://localhost:8000/")
+        print(f"   • Panel Admin: http://localhost:8000/admin/")
 
 def crear_datos_ejemplo():
     """Función principal para crear datos de ejemplo con validaciones"""
@@ -422,6 +499,9 @@ def crear_datos_ejemplo():
     
     print("🚀 INICIANDO CONFIGURACIÓN DE BASE DE DATOS CON VALIDACIONES")
     print("=" * 60)
+    
+    # Verificar dependencias primero
+    dependencias_ok = verificar_dependencias()
     
     try:
         # Mostrar estado inicial
@@ -444,6 +524,11 @@ def crear_datos_ejemplo():
         # Crear reservas
         reservas_creadas = crear_reservas(vuelos, pasajeros)
         
+        # Probar PDF y email solo si las dependencias están instaladas
+        if dependencias_ok:
+            print("\n" + "=" * 40)
+            probar_pdf_email()
+        
         # Resumen final
         print("\n" + "=" * 60)
         print("🎉 CONFIGURACIÓN COMPLETADA")
@@ -465,19 +550,19 @@ def crear_datos_ejemplo():
         print(f"   • Empleado: empleado1 / emp123")
         print(f"   • Cliente: cliente1 / cli123")
         
-        # Detectar si estamos en Render o desarrollo local
-        if os.environ.get('RENDER'):
-            base_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME', 'tu-app.onrender.com')}"
-        else:
-            base_url = "http://localhost:8000"
-            
-        print(f"\n🌐 URLS DE ACCESO:")
-        print(f"   • Aplicación: {base_url}/")
-        print(f"   • Panel Admin: {base_url}/admin/")
+        mostrar_urls_acceso()
         
         if vuelos_creados > 0 or Vuelo.objects.filter(estado='programado').exists():
             print(f"\n💡 PARA PROBAR EL BUSCADOR:")
             print(f"   Usa las fechas mostradas arriba en el formato YYYY-MM-DD")
+        
+        print(f"\n📧 CONFIGURACIÓN DE EMAIL:")
+        print(f"   • Los boletos se envían automáticamente por email al crear reservas")
+        print(f"   • Revisa tu bandeja de Mailtrap para ver los emails de prueba")
+        
+        # Verificar dependencias al final también
+        print("\n" + "=" * 40)
+        verificar_dependencias()
         
     except Exception as e:
         print(f"❌ Error durante la configuración: {e}")

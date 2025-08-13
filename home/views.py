@@ -7,10 +7,26 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.views import View
 from home.forms import LoginForm, RegisterForm
+from vuelos.models import Vuelo
+from django.utils import timezone
+
+def home(request):
+    """Vista principal del sistema"""
+    # Obtener algunos vuelos próximos para mostrar en el home
+    vuelos_proximos = Vuelo.objects.filter(
+        estado='programado',
+        fecha_salida__gte=timezone.now()
+    ).order_by('fecha_salida')[:3]
+    
+    context = {
+        'vuelos_proximos': vuelos_proximos,
+    }
+    
+    return render(request, 'home/home.html', context)
 
 class HomeView(View):
     def get(self, request):
-        return render(request, 'index.html')
+        return home(request)
         
 class LogoutView(View):
     def get(self, request):
@@ -43,7 +59,7 @@ class RegisterView(View):
 
             # Email opcional - comentar si no tienes configurado SMTP
             try:
-                subject = "Registro exitoso en AeroSystem"
+                subject = "Registro exitoso en RutaCeleste"
                 message = render_to_string(
                     'mails/welcome.html',
                     {'email': user.email, 'username': user.username}
