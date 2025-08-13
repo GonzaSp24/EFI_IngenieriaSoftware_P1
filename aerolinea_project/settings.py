@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['rutaceleste.onrender.com', 'localhost', '127.0.0.1']
 
 # Application definition
 INSTALLED_APPS = [
@@ -112,3 +112,21 @@ LOGOUT_REDIRECT_URL = '/'
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'tu-email@gmail.com'
 # EMAIL_HOST_PASSWORD = 'tu-contraseña'
+
+# Configuración para producción (Render)
+import os
+if 'RENDER' in os.environ:
+    ALLOWED_HOSTS.append(os.environ.get('RENDER_EXTERNAL_HOSTNAME'))
+    DEBUG = False
+    
+    # Configuración de base de datos para producción si es necesario
+    # DATABASES = {
+    #     'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+    # }
+    
+    # Configuración de archivos estáticos para producción
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    
+    # Middleware para archivos estáticos en producción
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
