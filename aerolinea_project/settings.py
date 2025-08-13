@@ -93,9 +93,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+
+# Crear directorio static si no existe
+STATIC_DIR = BASE_DIR / 'static'
+if not STATIC_DIR.exists():
+    STATIC_DIR.mkdir(exist_ok=True)
+
+STATICFILES_DIRS = [STATIC_DIR]
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -114,19 +118,15 @@ LOGOUT_REDIRECT_URL = '/'
 # EMAIL_HOST_PASSWORD = 'tu-contraseña'
 
 # Configuración para producción (Render)
-import os
 if 'RENDER' in os.environ:
     ALLOWED_HOSTS.append(os.environ.get('RENDER_EXTERNAL_HOSTNAME'))
     DEBUG = False
     
-    # Configuración de base de datos para producción si es necesario
-    # DATABASES = {
-    #     'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
-    # }
-    
     # Configuración de archivos estáticos para producción
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     
     # Middleware para archivos estáticos en producción
     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    
+    # Configuración de WhiteNoise
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

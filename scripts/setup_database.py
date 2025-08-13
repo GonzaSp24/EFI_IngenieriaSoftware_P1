@@ -1,6 +1,7 @@
 """
 Script mejorado para configurar la base de datos con validaciones
 Evita duplicados y valida datos existentes
+Optimizado para Render con timezone support
 """
 import os
 import sys
@@ -20,13 +21,15 @@ except Exception as e:
     print(f"❌ Error configurando Django: {e}")
     sys.exit(1)
 
-# Importar modelos
+# Importar modelos y timezone
 try:
     from vuelos.models import Avion, Vuelo, Asiento
     from pasajeros.models import Pasajero
     from reservas.models import Reserva, Boleto
     from django.contrib.auth.models import User
     from django.db import connection
+    from django.utils import timezone
+    from django.conf import settings
     print("✅ Modelos importados correctamente")
 except ImportError as e:
     print(f"❌ Error importando modelos: {e}")
@@ -178,10 +181,15 @@ def crear_aviones():
     return aviones, aviones_creados, asientos_creados_total
 
 def crear_vuelos(aviones):
-    """Crear vuelos con validaciones"""
+    """Crear vuelos con validaciones y timezone-aware datetimes"""
     print("🛫 Verificando/Creando vuelos...")
     
-    base_date = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0)
+    # Usar timezone-aware datetime para evitar warnings
+    if settings.USE_TZ:
+        base_date = timezone.now().replace(hour=8, minute=0, second=0, microsecond=0)
+    else:
+        base_date = datetime.now().replace(hour=8, minute=0, second=0, microsecond=0)
+    
     vuelos_data = [
         {
             'avion': aviones[0],
@@ -337,6 +345,10 @@ def crear_reservas(vuelos, pasajeros):
                     estado='confirmada'
                 )
                 
+                # Marcar asiento como ocupado
+                asiento1.estado = 'ocupado'
+                asiento1.save()
+                
                 # Crear boleto
                 Boleto.objects.create(reserva=reserva1)
                 print(f"✅ Reserva creada: {reserva1.codigo_reserva} para {pasajero1.nombre}")
@@ -365,6 +377,10 @@ def crear_reservas(vuelos, pasajeros):
                     estado='confirmada'
                 )
                 
+                # Marcar asiento como ocupado
+                asiento2.estado = 'ocupado'
+                asiento2.save()
+                
                 Boleto.objects.create(reserva=reserva2)
                 print(f"✅ Reserva creada: {reserva2.codigo_reserva} para {pasajero2.nombre}")
                 reservas_creadas += 1
@@ -390,7 +406,12 @@ def mostrar_fechas_vuelos():
     if vuelos.exists():
         print(f"\n📅 VUELOS PROGRAMADOS:")
         for vuelo in vuelos:
-            print(f"   • {vuelo.origen} -> {vuelo.destino}: {vuelo.fecha_salida.date()} a las {vuelo.fecha_salida.time()}")
+            # Formatear fecha según timezone
+            if settings.USE_TZ and hasattr(vuelo.fecha_salida, 'astimezone'):
+                fecha_local = vuelo.fecha_salida.astimezone()
+                print(f"   • {vuelo.origen} -> {vuelo.destino}: {fecha_local.date()} a las {fecha_local.time()}")
+            else:
+                print(f"   • {vuelo.origen} -> {vuelo.destino}: {vuelo.fecha_salida.date()} a las {vuelo.fecha_salida.time()}")
     else:
         print(f"\n⚠️  No hay vuelos programados")
 
@@ -444,9 +465,15 @@ def crear_datos_ejemplo():
         print(f"   • Empleado: empleado1 / emp123")
         print(f"   • Cliente: cliente1 / cli123")
         
+        # Detectar si estamos en Render o desarrollo local
+        if os.environ.get('RENDER'):
+            base_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME', 'tu-app.onrender.com')}"
+        else:
+            base_url = "http://localhost:8000"
+            
         print(f"\n🌐 URLS DE ACCESO:")
-        print(f"   • Aplicación: http://localhost:8000/")
-        print(f"   • Panel Admin: http://localhost:8000/admin/")
+        print(f"   • Aplicación: {base_url}/")
+        print(f"   • Panel Admin: {base_url}/admin/")
         
         if vuelos_creados > 0 or Vuelo.objects.filter(estado='programado').exists():
             print(f"\n💡 PARA PROBAR EL BUSCADOR:")
