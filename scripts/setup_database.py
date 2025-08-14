@@ -21,6 +21,31 @@ except Exception as e:
     print(f"❌ Error configurando Django: {e}")
     sys.exit(1)
 
+def verificar_migraciones():
+    """Verifica que las migraciones básicas estén aplicadas"""
+    from django.db.migrations.executor import MigrationExecutor
+    from django.db import connections, DEFAULT_DB_ALIAS
+    
+    print("🔍 Verificando migraciones pendientes...")
+    try:
+        connection = connections[DEFAULT_DB_ALIAS]
+        executor = MigrationExecutor(connection)
+        pending_migrations = executor.loader.applied_migrations
+        
+        # Verificar migraciones básicas
+        apps_necesarias = ['auth', 'contenttypes', 'sessions', 'admin']
+        for app in apps_necesarias:
+            if app not in pending_migrations:
+                print(f"❌ Migraciones pendientes para {app}")
+                return False
+        
+        print("✅ Todas las migraciones básicas están aplicadas")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error verificando migraciones: {e}")
+        return False
+    
 def verificar_dependencias():
     """Verificar que las dependencias necesarias estén instaladas"""
     print("📦 Verificando dependencias...")
@@ -494,6 +519,14 @@ def mostrar_urls_acceso():
 
 def crear_datos_ejemplo():
     """Función principal para crear datos de ejemplo con validaciones"""
+    
+    if not verificar_migraciones():
+        print("⚠️  Ejecuta primero: python manage.py migrate")
+        return
+    
+    if not verificar_tablas():
+        return
+    
     if not verificar_tablas():
         return
     
