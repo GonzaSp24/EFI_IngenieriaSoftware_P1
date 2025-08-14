@@ -183,7 +183,7 @@ def cancelar_reserva(request, pk):
     """Permite cancelar una reserva."""
     reserva = get_object_or_404(Reserva, pk=pk)
     
-    # Verificar permisos: solo el dueño de la reserva o admin pueden cancelarla
+    # Verificar permisos
     puede_cancelar = False
     if request.user.is_staff or request.user.is_superuser:
         puede_cancelar = True
@@ -207,10 +207,18 @@ def cancelar_reserva(request, pk):
             except Boleto.DoesNotExist:
                 pass
             
-            messages.success(request, f'La reserva {reserva.codigo_reserva} ha sido cancelada.')
+            # Mensaje personalizado
+            messages.success(request, f'Tu reserva {reserva.codigo_reserva} ha sido cancelada exitosamente. Si necesitas ayuda, contáctanos.')
         else:
-            messages.warning(request, f'La reserva {reserva.codigo_reserva} no puede ser cancelada en su estado actual.')
+            messages.warning(request, f'La reserva {reserva.codigo_reserva} no puede ser cancelada porque ya está en estado {reserva.get_estado_display()}.')
         
         return redirect('mis_reservas')
     
-    return render(request, 'reservas/cancelar_reserva.html', {'reserva': reserva})
+    # Contexto adicional para el template
+    context = {
+        'reserva': reserva,
+        'puede_cancelar': puede_cancelar,
+        'titulo': 'Confirmar cancelación',
+        'mensaje': f'¿Estás seguro de que deseas cancelar tu reserva {reserva.codigo_reserva}?',
+    }
+    return render(request, 'reservas/cancelar_reserva.html', context)

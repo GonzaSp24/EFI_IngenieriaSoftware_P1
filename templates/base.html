@@ -120,6 +120,19 @@
             background-color: #0d6efd;
             color: white;
         }
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .form-switch .form-check-input {
+            width: 3em;
+            height: 1.5em;
+            cursor: pointer;
+        }
+        .form-check-label {
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -176,21 +189,21 @@
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
-                    <!-- Selector de idioma -->
-                    <li class="nav-item language-selector me-3">
-                        <form action="{% url 'set_language' %}" method="post" class="d-inline" id="language-form">
-                            {% csrf_token %}
-                            <select name="language" onchange="document.getElementById('language-form').submit();" class="form-select form-select-sm">
-                                {% get_current_language as LANGUAGE_CODE %}
-                                {% get_available_languages as LANGUAGES %}
-                                {% for lang_code, lang_name in LANGUAGES %}
-                                    <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>
-                                        {{ lang_name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                    </li>
+                    <!-- Reemplaza el selector de idiomas por este código -->
+                        <li class="nav-item me-3">
+                            <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center">
+                                {% csrf_token %}
+                                <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="languageSwitch"
+                                        name="language" value="en" {% if LANGUAGE_CODE == 'en' %}checked{% endif %}
+                                        onchange="this.form.submit()">
+                                    <label class="form-check-label text-white ms-2" for="languageSwitch">
+                                        {% if LANGUAGE_CODE == 'en' %}EN{% else %}ES{% endif %}
+                                    </label>
+                                </div>
+                            </form>
+                        </li>
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -257,3 +270,4 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+<!-- TODO : No cambia de EN a ES pero si de ES a EN -->

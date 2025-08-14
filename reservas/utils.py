@@ -59,17 +59,17 @@ def generar_pdf_boleto(reserva):
     story.append(Paragraph("Boleto Electrónico", header_style))
     story.append(Spacer(1, 20))
     
-    # Información del vuelo
+    # Información del vuelo - MODIFICAR ESTA PARTE
     flight_data = [
         ['Código de Reserva:', reserva.codigo_reserva],
         ['Pasajero:', f"{reserva.pasajero.nombre} {reserva.pasajero.apellido}"],
         ['Documento:', reserva.pasajero.documento],
         ['Vuelo:', f"{reserva.vuelo.origen} → {reserva.vuelo.destino}"],
         ['Fecha:', reserva.vuelo.fecha_salida.strftime('%d/%m/%Y')],
-        ['Hora de Salida:', reserva.vuelo.hora_salida.strftime('%H:%M')],
+        ['Hora de Salida:', reserva.vuelo.fecha_salida.strftime('%H:%M')],  # Usar fecha_salida en lugar de hora_salida
         ['Asiento:', reserva.asiento.numero],
-        ['Clase:', reserva.asiento.get_clase_display()],
-        ['Precio:', f"${reserva.precio_total:,.0f}"],
+        ['Clase:', reserva.asiento.get_tipo_display()],  # Cambiado de get_clase_display a get_tipo_display
+        ['Precio:', f"${reserva.precio:,.0f}"],  # Cambiado de precio_total a precio
         ['Estado:', reserva.get_estado_display()],
     ]
     

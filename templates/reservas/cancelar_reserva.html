@@ -1,60 +1,55 @@
 {% extends 'base.html' %}
 
-{% block title %}Boleto Electrónico - {{ boleto.reserva.codigo_reserva }}{% endblock %}
+{% block title %}Cancelar Reserva - {{ reserva.codigo_reserva }}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow-lg mb-4">
-            <div class="card-header bg-primary text-white text-center">
-                <h3 class="mb-0"><i class="fas fa-ticket-alt"></i> Boleto Electrónico</h3>
-            </div>
-            <div class="card-body p-4">
-                <div class="text-center mb-4">
-                    <img src="/placeholder.svg?height=100&width=300" alt="Código de Barras" class="img-fluid mb-3">
-                    <p class="lead fw-bold">{{ boleto.codigo_barra }}</p>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Cancelación</h3>
                 </div>
+                <div class="card-body">
+                    <div class="alert alert-warning border-warning">
+                        <h4 class="alert-heading d-flex align-items-center">
+                            <i class="fas fa-exclamation-circle me-2"></i>¡Atención!
+                        </h4>
+                        <p>Estás a punto de cancelar tu reserva con código: <strong class="text-dark">{{ reserva.codigo_reserva }}</strong></p>
+                        <hr>
+                        <div class="mb-3">
+                            <h5 class="d-flex align-items-center">
+                                <i class="fas fa-plane me-2"></i>Detalles del Vuelo:
+                            </h5>
+                            <ul class="mb-0 ps-4">
+                                <li><strong>Ruta:</strong> {{ reserva.vuelo.origen }} → {{ reserva.vuelo.destino }}</li>
+                                <li><strong>Fecha:</strong> {{ reserva.vuelo.fecha_salida|date:"d/m/Y" }}</li>
+                                <li><strong>Hora:</strong> {{ reserva.vuelo.fecha_salida|time:"H:i" }}</li>
+                                <li><strong>Asiento:</strong> {{ reserva.asiento.numero }} ({{ reserva.asiento.get_tipo_display }})</li>
+                                <li><strong>Estado actual:</strong> 
+                                    <span class="badge bg-{% if reserva.estado == 'confirmada' %}success{% else %}warning{% endif %}">
+                                        {{ reserva.get_estado_display }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                        <hr>
+                        <p class="mb-0"><i class="fas fa-info-circle me-2"></i><strong>Esta acción no se puede deshacer.</strong></p>
+                    </div>
 
-                <h5 class="text-primary mb-3"><i class="fas fa-info-circle"></i> Información de la Reserva</h5>
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <p><strong>Código de Reserva:</strong> {{ boleto.reserva.codigo_reserva }}</p>
-                        <p><strong>Estado de Reserva:</strong> 
-                            <span class="badge bg-{% if boleto.reserva.estado == 'confirmada' %}success{% elif boleto.reserva.estado == 'pendiente' %}warning{% else %}danger{% endif %}">
-                                {{ boleto.reserva.get_estado_display }}
-                            </span>
-                        </p>
-                        <p><strong>Fecha de Emisión:</strong> {{ boleto.fecha_emision|date:"d/m/Y H:i" }}</p>
+                    <div class="d-flex justify-content-between mt-4">
+                        <form method="post" class="w-100">
+                            {% csrf_token %}
+                            <div class="d-grid gap-3 d-md-flex justify-content-md-end">
+                                <a href="{% url 'mis_reservas' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Volver atrás
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-times-circle me-2"></i>Confirmar Cancelación
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="col-md-6">
-                        <p><strong>Pasajero:</strong> {{ boleto.reserva.pasajero.nombre }} {{ boleto.reserva.pasajero.apellido }}</p>
-                        <p><strong>Documento:</strong> {{ boleto.reserva.pasajero.documento }}</p>
-                        <p><strong>Email:</strong> {{ boleto.reserva.pasajero.email }}</p>
-                    </div>
-                </div>
-
-                <h5 class="text-primary mb-3"><i class="fas fa-plane"></i> Detalles del Vuelo</h5>
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <p><strong>Origen:</strong> {{ boleto.reserva.vuelo.origen }}</p>
-                        <p><strong>Destino:</strong> {{ boleto.reserva.vuelo.destino }}</p>
-                        <p><strong>Fecha de Salida:</strong> {{ boleto.reserva.vuelo.fecha_salida|date:"d/m/Y H:i" }}</p>
-                        <p><strong>Fecha de Llegada:</strong> {{ boleto.reserva.vuelo.fecha_llegada|date:"d/m/Y H:i" }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Avión:</strong> {{ boleto.reserva.vuelo.avion.modelo }}</p>
-                        <p><strong>Asiento:</strong> <span class="badge bg-secondary">{{ boleto.reserva.asiento.numero }}</span> ({{ boleto.reserva.asiento.get_tipo_display }})</p>
-                        <p><strong>Precio Pagado:</strong> ${{ boleto.reserva.precio }}</p>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-end mt-4">
-                    <button onclick="window.print()" class="btn btn-info me-2">
-                        <i class="fas fa-print"></i> Imprimir Boleto
-                    </button>
-                    <a href="{% url 'mis_reservas' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Volver a Mis Reservas
-                    </a>
                 </div>
             </div>
         </div>
@@ -83,3 +78,4 @@
     }
 </style>
 {% endblock %}
+<!-- #TODO : Hacer el msj de si deseas confirmar reserva bien, sale msj del host -->
