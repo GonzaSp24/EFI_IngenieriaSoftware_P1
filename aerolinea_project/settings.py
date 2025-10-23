@@ -27,17 +27,24 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'drf_yasg',
+    'corsheaders',
+    
     # Tus apps
     'home',
     'core',
     'vuelos',
     'pasajeros',
     'reservas',
+    'api',  # New API app
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Para archivos estáticos en producción
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -113,6 +120,58 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'a2615db73a90f0'
 EMAIL_HOST_PASSWORD = 'b56dbe98f6e2aa'
 DEFAULT_FROM_EMAIL = 'noreply@rutaceleste.onrender.com'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_FILTER_BACKENDS': [
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'EXCEPTION_HANDLER': 'api.utils.custom_exception_handler',
+}
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+    'JSON_EDITOR': True,
+}
 
 # Configuración para producción (Render)
 if os.getenv('RENDER'):
