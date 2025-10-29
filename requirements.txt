@@ -1,6 +1,7 @@
 asgiref==3.9.1
 certifi==2025.8.3
 chardet==5.2.0
+colorama==0.4.6
 dj-database-url==3.0.1
 Django==5.2.4
 gunicorn==23.0.0
@@ -14,5 +15,6 @@ reportlab==4.2.2
 sentry-sdk==2.34.1
 sqlparse==0.5.3
 typing_extensions==4.14.1
+tzdata==2025.2
 urllib3==2.5.0
 whitenoise==6.9.0
