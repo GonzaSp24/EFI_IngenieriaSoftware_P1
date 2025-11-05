@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.views import View
 from home.forms import LoginForm, RegisterForm
-from vuelos.models import Vuelo
+from airline.models import Vuelo
 from django.utils import timezone
 
 def home(request):

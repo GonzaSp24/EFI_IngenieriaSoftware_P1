@@ -85,7 +85,7 @@ def probar_pdf_email():
     print("🧪 Probando funcionalidad de PDF y Email...")
     
     try:
-        from reservas.models import Reserva
+        from airline.models import Reserva
         reserva = Reserva.objects.filter(estado='confirmada').first()
         
         if not reserva:
@@ -95,7 +95,7 @@ def probar_pdf_email():
         print(f"📋 Probando con boleto: {reserva.codigo_reserva}")
         
         try:
-            from reservas.utils import generar_pdf_boleto, enviar_boleto_email
+            from airline.utils import generar_pdf_boleto, enviar_boleto_email
             print("✅ Utilidades de reservas importadas correctamente")
             
             # Probar PDF
@@ -123,9 +123,7 @@ def probar_pdf_email():
 
 # Importar modelos
 try:
-    from vuelos.models import Avion, Vuelo, Asiento
-    from pasajeros.models import Pasajero
-    from reservas.models import Reserva, Boleto
+    from airline.models import Avion, Vuelo, Asiento, Pasajero, Reserva, Boleto
     from django.contrib.auth.models import User
     from django.db import connection
     print("✅ Modelos importados correctamente")
@@ -141,9 +139,9 @@ def verificar_tablas():
             tablas = [row[0] for row in cursor.fetchall()]
             
         tablas_requeridas = [
-            'vuelos_avion', 'vuelos_vuelo', 'vuelos_asiento', 
-            'pasajeros_pasajero', 
-            'reservas_reserva', 'reservas_boleto',
+            'airline_avion', 'airline_vuelo', 'airline_asiento', 
+            'airline_pasajero', 
+            'airline_reserva', 'airline_boleto',
             'auth_user'
         ]
         

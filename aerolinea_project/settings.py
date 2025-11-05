@@ -29,16 +29,14 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_spectacular',  # Agregando drf_spectacular para documentación OpenAPI/Swagger
     'drf_yasg',
     'corsheaders',
     
     # Tus apps
     'home',
-    'core',
-    'vuelos',
-    'pasajeros',
-    'reservas',
-    'api',  # New API app
+    'airline',  # App principal con toda la lógica de negocio (modelos, services, repositories)
+    'api',  # API REST
 ]
 
 MIDDLEWARE = [
@@ -60,7 +58,7 @@ WSGI_APPLICATION = 'aerolinea_project.wsgi.application'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,6 +67,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
+                'airline.context_processors.airline_info',
+                'airline.context_processors.user_info',
             ],
         },
     },
@@ -83,20 +83,20 @@ DATABASES = {
 }
 
 # Internationalization
-LANGUAGE_CODE = 'es'
+LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/Argentina/Buenos_Aires'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-LANGUAGES = [
-    ('es', 'Español'),
-    ('en', 'English'),
-]
+# LANGUAGES = [
+#     ('es', 'Español'),
+#     ('en', 'English'),
+# ]
 
-LOCALE_PATHS = [
-    BASE_DIR / 'locale',
-]
+# LOCALE_PATHS = [
+#     BASE_DIR / 'locale',
+# ]
 
 # Static files
 STATIC_URL = '/static/'
@@ -121,12 +121,14 @@ EMAIL_HOST_USER = 'a2615db73a90f0'
 EMAIL_HOST_PASSWORD = 'b56dbe98f6e2aa'
 DEFAULT_FROM_EMAIL = 'noreply@rutaceleste.onrender.com'
 
+from datetime import timedelta
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
@@ -135,9 +137,34 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
     'EXCEPTION_HANDLER': 'api.utils.custom_exception_handler',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # Agregando drf_spectacular como schema por defecto
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ] if not DEBUG else [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
 }
 
-from datetime import timedelta
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'API Sistema de Gestión de Aerolínea',
+    'DESCRIPTION': 'API REST para gestión de vuelos, pasajeros, reservas y boletos',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'SECURITY': [{'Bearer': []}],
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {
+            'Bearer': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+                'description': 'Token JWT de autenticación. Formato: Bearer {token}'
+            }
+        }
+    },
+}
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=5),
@@ -166,11 +193,13 @@ SWAGGER_SETTINGS = {
         'Bearer': {
             'type': 'apiKey',
             'name': 'Authorization',
-            'in': 'header'
+            'in': 'header',
+            'description': 'Token de autenticación JWT. Formato: "Bearer {token}"'
         }
     },
     'USE_SESSION_AUTH': False,
     'JSON_EDITOR': True,
+    'PERSIST_AUTH': True,
 }
 
 # Configuración para producción (Render)
