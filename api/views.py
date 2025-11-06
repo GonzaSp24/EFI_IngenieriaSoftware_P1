@@ -9,7 +9,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from django.utils.crypto import get_random_string
-
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 from airline.models import Vuelo, Avion, Asiento, Pasajero, Reserva, Boleto
 
 from api.serializers import (
@@ -32,10 +33,6 @@ from airline.services import (
     ReservaService,
     BoletoService,
 )
-
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
-
 
 # ============================================================================
 # GESTIÓN DE VUELOS (API)
@@ -561,7 +558,7 @@ class LoginView(APIView):
     """
 
     permission_classes = [AllowAny]
-
+    
     def post(self, request):
         """Inicia sesión y retorna tokens JWT"""
         from rest_framework_simplejwt.tokens import RefreshToken
