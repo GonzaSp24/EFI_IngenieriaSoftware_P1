@@ -1,5 +1,6 @@
 {% load static %}
 {% load i18n %}
+
 <!DOCTYPE html>
 <html lang="{% get_current_language as LANGUAGE_CODE %}{{ LANGUAGE_CODE }}">
 <head>
@@ -166,7 +167,7 @@
                         </li>
                         {% if not user.is_staff and not user.is_superuser %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'mi_perfil_pasajero' %}">
+                                <a class="nav-link" href="{% url 'mi_perfil' %}">
                                     <i class="fas fa-user"></i> {% trans "Mi Perfil" %}
                                 </a>
                             </li>
@@ -195,9 +196,16 @@
                                 {% csrf_token %}
                                 <input name="next" type="hidden" value="{{ request.get_full_path }}">
                                 <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="languageSwitch"
-                                        name="language" value="en" {% if LANGUAGE_CODE == 'en' %}checked{% endif %}
-                                        onchange="this.form.submit()">
+                                    <input 
+                                        class="form-check-input" 
+                                        type="checkbox" 
+                                        role="switch" 
+                                        id="languageSwitch"
+                                        name="language"
+                                        value="{% if LANGUAGE_CODE == 'en' %}es{% else %}en{% endif %}" 
+                                        {% if LANGUAGE_CODE == 'en' %}checked{% endif %}
+                                        onchange="this.form.submit()"
+                                    >
                                     <label class="form-check-label text-white ms-2" for="languageSwitch">
                                         {% if LANGUAGE_CODE == 'en' %}EN{% else %}ES{% endif %}
                                     </label>
