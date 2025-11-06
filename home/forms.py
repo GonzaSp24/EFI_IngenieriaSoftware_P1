@@ -2,41 +2,34 @@ from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
+
 class RegisterForm(forms.Form):
     username = forms.CharField(
         max_length=150,
         label="Nombre de Usuario",
-        widget=forms.TextInput(
-            attrs={'class': 'form-control'}
-        )
+        widget=forms.TextInput(attrs={"class": "form-control"}),
     )
     password1 = forms.CharField(
         label="Contraseña",
         max_length=150,
-        widget=forms.PasswordInput(
-            attrs={'class': 'form-control'}
-        )
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
     password2 = forms.CharField(
         label="Repita la contraseña",
         max_length=150,
-        widget=forms.PasswordInput(
-            attrs={'class': 'form-control'}
-        )
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
     email = forms.EmailField(
         label="Correo Electronico",
-        widget=forms.EmailInput(
-            attrs={'class': 'form-control'}
-        )
+        widget=forms.EmailInput(attrs={"class": "form-control"}),
     )
 
     def clean_username(self):
-        username = self.cleaned_data['username']
+        username = self.cleaned_data["username"]
         if User.objects.filter(username=username).exists():
             raise ValidationError("Este nombre de usuario ya fue utilizado")
         return username
-    
+
     def clean_email(self):
         email = self.cleaned_data.get("email")
         if User.objects.filter(email=email).exists():
@@ -56,13 +49,8 @@ class LoginForm(forms.Form):
     username = forms.CharField(
         label="Nombre de usuario",
         max_length=150,
-        widget=forms.TextInput(
-            attrs={'class': 'form-control'}
-        )
+        widget=forms.TextInput(attrs={"class": "form-control"}),
     )
     password = forms.CharField(
-        label="Contraseña",
-        widget=forms.PasswordInput(
-            attrs={'class': 'form-control'}
-        )
+        label="Contraseña", widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
