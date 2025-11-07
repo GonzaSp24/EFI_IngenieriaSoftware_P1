@@ -298,16 +298,17 @@ class PasajeroSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Actualiza un pasajero existente usando la capa de servicio"""
-        return PasajeroService.update_pasajero(
-            pasajero_id=instance.id,
-            nombre=validated_data.get("nombre", instance.nombre),
-            apellido=validated_data.get("apellido", instance.apellido),
-            documento=validated_data.get("documento", instance.documento),
-            tipo_documento=validated_data.get("tipo_documento", instance.tipo_documento),
-            email=validated_data.get("email", instance.email),
-            telefono=validated_data.get("telefono", instance.telefono),
-            fecha_nacimiento=validated_data.get("fecha_nacimiento", instance.fecha_nacimiento),
-        )
+        data = {
+            "nombre": validated_data.get("nombre", instance.nombre),
+            "apellido": validated_data.get("apellido", instance.apellido),
+            "documento": validated_data.get("documento", instance.documento),
+            "tipo_documento": validated_data.get("tipo_documento", instance.tipo_documento),
+            "email": validated_data.get("email", instance.email),
+            "telefono": validated_data.get("telefono", instance.telefono),
+            "fecha_nacimiento": validated_data.get("fecha_nacimiento", instance.fecha_nacimiento),
+        }
+
+        return PasajeroService.update_pasajero(instance.id, data)
 
 
 
@@ -332,15 +333,11 @@ class ReservaSerializer(serializers.ModelSerializer):
     asiento = serializers.PrimaryKeyRelatedField(
         queryset=Asiento.objects.all(), write_only=True
     )
-    usuario = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), write_only=True
-    )
 
     # Para GET -> se muestra la información completa
     vuelo_display = serializers.StringRelatedField(source="vuelo", read_only=True)
     pasajero_display = serializers.StringRelatedField(source="pasajero", read_only=True)
     asiento_display = serializers.StringRelatedField(source="asiento", read_only=True)
-    usuario_display = serializers.StringRelatedField(source="usuario", read_only=True)
 
     class Meta:
         model = Reserva
@@ -356,25 +353,16 @@ class ReservaSerializer(serializers.ModelSerializer):
             "pasajero_display",
             "asiento",
             "asiento_display",
-            "usuario",
-            "usuario_display",
         ]
 
     def create(self, validated_data):
         """Crea una nueva reserva usando la capa de servicio"""
-        # usuario desde el request (no del payload)
-        user = None
-        request = self.context.get("request")
-        if request and request.user and request.user.is_authenticated:
-            user = request.user
 
         return ReservaService.create_reserva(
             vuelo_id=validated_data["vuelo"].id,
             pasajero_id=validated_data["pasajero"].id,
             asiento_id=validated_data["asiento"].id,
-            usuario_id=(user.id if user else None),
             precio=validated_data.get("precio"),
-            # si querés permitir código custom, pasalo; si no, que lo genere el service
             codigo_reserva=validated_data.get("codigo_reserva"),
             estado=validated_data.get("estado", "pendiente"),
         )
@@ -410,6 +398,10 @@ class BoletoSerializer(serializers.ModelSerializer):
     # Para GET -> se muestra la información expandida
     reserva_display = serializers.StringRelatedField(source="reserva", read_only=True)
 
+    # Estos campos los genera el backend (modelo/servicio)
+    codigo_barra = serializers.CharField(read_only=True)
+    fecha_emision = serializers.DateTimeField(read_only=True)
+
     class Meta:
         model = Boleto
         fields = [
@@ -420,18 +412,19 @@ class BoletoSerializer(serializers.ModelSerializer):
             "reserva",
             "reserva_display",
         ]
+        read_only_fields = ["id", "codigo_barra", "fecha_emision", "reserva_display"]
 
     def create(self, validated_data):
         """Crea un nuevo boleto usando la capa de servicio"""
-        return BoletoService.crear_boleto(
-            reserva_id=validated_data["reserva"].id,
-            codigo_barra=validated_data.get("codigo_barra"),
+        return BoletoService.create_boleto(
+            reserva_id=validated_data["reserva"].id
         )
 
     def update(self, instance, validated_data):
         """Actualiza un boleto existente usando la capa de servicio"""
+        # Si tu service se llama en español (actualizar_boleto), deja esta línea.
+        # Si se llama en inglés (update_boleto), cambia el nombre del método.
         return BoletoService.actualizar_boleto(
             boleto_id=instance.id,
             estado=validated_data.get("estado", instance.estado),
-            codigo_barra=validated_data.get("codigo_barra", instance.codigo_barra),
         )

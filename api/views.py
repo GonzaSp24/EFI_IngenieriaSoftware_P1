@@ -61,13 +61,9 @@ class FlightAvailableListAPIView(AuthView, ListAPIView):
 
 
 class FlightDetailAPIView(AuthView, RetrieveAPIView):
-    """
-    GET /api/flightDetail/<pk>/
-    Detalle completo de un vuelo (asientos, reservas, etc.).
-    """
     permission_classes = [IsAuthenticated]
     serializer_class = VueloDetailSerializer
-    lookup_field = "pk"  # explícito: tomamos <pk> de la URL
+    lookup_field = "pk"
 
     @extend_schema(responses=VueloDetailSerializer)
     def get(self, request, *args, **kwargs):
@@ -76,18 +72,17 @@ class FlightDetailAPIView(AuthView, RetrieveAPIView):
         return Response(ser.data)
 
     def get_object(self):
-        """
-        Obtiene un Vuelo POR MODELO usando el service.
-        Importantísimo: el service debe devolver instancia de Vuelo,
-        no dict. Idealmente con select_related/prefetch para performance.
-        """
         vuelo_id = self.kwargs.get("pk")
+
+        # Debe devolver instancia de Vuelo o lanzar NotFound
         vuelo = VueloService.get_vuelo(vuelo_id)
         if vuelo is None:
             raise NotFound("Vuelo no encontrado")
+        if not isinstance(vuelo, Vuelo):
+            # por si el service devolviera un id
+            vuelo = Vuelo.objects.get(pk=vuelo)
 
-        # Si el service no aplica prefetch, reforzá acá:
-        # (Evita N+1 al serializar asientos y reservas)
+        # Prefetch/optimizaciones
         return (
             Vuelo.objects
             .select_related("avion")
@@ -176,8 +171,8 @@ class PlaneLayoutAPIView(AuthAdminView, ListAPIView):
     serializer_class = AsientoSerializer
     pagination_class = None
 
-    def get(self, request, pk):
-        avion = AvionService.get_avion(pk)
+    def get(self, request, plane_id):
+        avion = AvionService.get_avion(plane_id)
         if not avion:
             raise NotFound("Avión no encontrado")
 
@@ -277,7 +272,7 @@ class ReservationByPassengerAPIView(AuthView, ListAPIView):
     def get_queryset(self):
         """Obtiene reservas de un pasajero"""
         passenger_id = self.kwargs.get("passenger_id")
-        return ReservaService.get_reserva(passenger_id)
+        return PasajeroService.get_reservas_pasajero(passenger_id)
 
 
 # ============================================================================
@@ -302,10 +297,9 @@ class CreateReservationAPIView(AuthAdminView, viewsets.ViewSet):
         vuelo_id = data.get("vuelo")
         pasajero_id = data.get("pasajero")
         asiento_id = data.get("asiento")
-        usuario_id = data.get("usuario")
 
         # Validaciones básicas
-        if not (vuelo_id and pasajero_id and asiento_id and usuario_id):
+        if not (vuelo_id and pasajero_id and asiento_id):
             return Response(
                 {"error": "Faltan campos obligatorios."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -339,7 +333,6 @@ class CreateReservationAPIView(AuthAdminView, viewsets.ViewSet):
             vuelo_id=vuelo_id,
             pasajero_id=pasajero_id,
             asiento_id=asiento_id,
-            usuario_id=usuario_id,
             precio=precio,
             codigo_reserva=codigo_reserva,
         )
@@ -473,12 +466,14 @@ class TicketInformationAPIView(AuthView, RetrieveAPIView):
 
     def get(self, request, barcode):
         """Obtiene información de un boleto por código de barras"""
-        data = BoletoService.get_boleto_by_codigo(barcode)
-        if not data:
+        boleto = BoletoService.get_boleto_by_codigo(barcode)
+        if not boleto:
             return Response(
                 {"error": "El ticket no existe."}, status=status.HTTP_404_NOT_FOUND
             )
-        return Response(data, status=status.HTTP_200_OK)
+
+        serializer = BoletoSerializer(boleto)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BoletoViewSet(AuthAdminView, viewsets.ModelViewSet):
@@ -640,23 +635,31 @@ class PasajerosPorVueloView(APIView):
     def get(self, request, vuelo_id):
         """Obtiene lista de pasajeros de un vuelo"""
         try:
-            vuelo = VueloService.get_vuelo(vuelo_id)
-            reservas = Reserva.objects.filter(
-                vuelo_id=vuelo_id, estado="confirmada"
-            ).select_related("pasajero")
+            vuelo = Vuelo.objects.get(pk=vuelo_id)
 
-            pasajeros = [reserva.pasajero for reserva in reservas]
-            serializer = PasajeroSerializer(pasajeros, many=True)
+            reservas = (
+                Reserva.objects
+                .filter(vuelo_id=vuelo_id, estado="confirmada")
+                .select_related("pasajero")
+            )
+
+            data = [
+                {
+                    "pasajero_id": r.pasajero_id,
+                    "nombre": r.pasajero.nombre,
+                    "apellido": r.pasajero.apellido,
+                    "documento": r.pasajero.documento,
+                    "asiento": f"{r.asiento.fila}{r.asiento.columna}",
+                    "codigo_reserva": r.codigo_reserva,
+                }
+                for r in reservas
+            ]
 
             return Response(
-                {
-                    "vuelo": f"{vuelo.origen} → {vuelo.destino}",
-                    "fecha": vuelo.fecha_salida,
-                    "total_pasajeros": len(pasajeros),
-                    "pasajeros": serializer.data,
-                },
+                {"vuelo": vuelo_id, "total_pasajeros": len(data), "pasajeros": data},
                 status=status.HTTP_200_OK,
             )
+
         except Vuelo.DoesNotExist:
             return Response(
                 {"error": "El vuelo no existe."}, status=status.HTTP_404_NOT_FOUND

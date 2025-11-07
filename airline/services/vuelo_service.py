@@ -237,39 +237,29 @@ class VueloService:
 
     @staticmethod
     def update_vuelo(*, vuelo_id, origen=None, destino=None, fecha_salida=None, fecha_llegada=None,
-                         precio_base=None, estado=None, avion_id=None):
-        """
-        Actualizar un vuelo existente.
+                 precio_base=None, estado=None, avion_id=None):
+        data = {}
+        if origen is not None: data["origen"] = origen
+        if destino is not None: data["destino"] = destino
+        if fecha_salida is not None: data["fecha_salida"] = fecha_salida
+        if fecha_llegada is not None: data["fecha_llegada"] = fecha_llegada
+        if precio_base is not None: data["precio_base"] = precio_base
+        if estado is not None: data["estado"] = estado
+        if avion_id is not None: data["avion_id"] = avion_id
 
-        Args:
-            vuelo_id: ID del vuelo a actualizar
-            data: Diccionario con los datos a actualizar
+        vuelo_actual = VueloRepository.get_by_id(vuelo_id)
+        if not vuelo_actual:
+            raise NotFound("Vuelo no encontrado")
 
-        Returns:
-            Objeto Vuelo actualizado
-
-        Raises:
-            NotFound: Si el vuelo no existe
-        """
-        vuelo = VueloRepository.get_by_id(vuelo_id) 
-
-        # Aplicar cambios
-        if origen is not None: vuelo.origen = origen
-        if destino is not None: vuelo.destino = destino
-        if fecha_salida is not None: vuelo.fecha_salida = fecha_salida
-        if fecha_llegada is not None: vuelo.fecha_llegada = fecha_llegada
-        if precio_base is not None: vuelo.precio_base = precio_base
-        if estado is not None: vuelo.estado = estado
-        if avion_id is not None: vuelo.avion_id = avion_id
-
-        # Recalcular duración si cambió alguna fecha
-        if vuelo.fecha_salida and vuelo.fecha_llegada:
-            if vuelo.fecha_llegada <= vuelo.fecha_salida:
+        fs = data.get("fecha_salida", vuelo_actual.fecha_salida)
+        fl = data.get("fecha_llegada", vuelo_actual.fecha_llegada)
+        if fs and fl:
+            if fl <= fs:
                 raise ValueError("fecha_llegada debe ser posterior a fecha_salida")
-            vuelo.duracion = vuelo.fecha_llegada - vuelo.fecha_salida
+            data["duracion"] = fl - fs
 
-        VueloRepository.save(vuelo) 
-        return vuelo
+        # Delegar al repo
+        return VueloRepository.update(vuelo_id, data) 
 
     @staticmethod
     def delete_vuelo(vuelo_id):

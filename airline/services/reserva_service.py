@@ -13,7 +13,7 @@ from airline.repositories import (
     PasajeroRepository,
     AsientoRepository,
 )
-from airline.models import Vuelo, Pasajero, Asiento, Reserva
+from airline.models import Vuelo, Pasajero, Asiento, Reserva,  User
 from rest_framework.exceptions import ValidationError, NotFound
 
 
@@ -81,6 +81,7 @@ class ReservaService:
         vuelo=None, vuelo_id=None,
         pasajero=None, pasajero_id=None,
         asiento=None, asiento_id=None,
+        codigo_reserva=None,
         precio=None,
         estado="pendiente"
     ) -> Reserva:
@@ -125,6 +126,7 @@ class ReservaService:
             vuelo=vuelo,
             pasajero=pasajero,
             asiento=asiento,
+            codigo_reserva=codigo_reserva,
             precio=precio,
             estado=estado,
         )
