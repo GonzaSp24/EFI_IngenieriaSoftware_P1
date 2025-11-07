@@ -248,7 +248,7 @@ class VueloSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Actualiza un vuelo existente usando la capa de servicio"""
-        return VueloService.actualizar_vuelo(
+        return VueloService.update_vuelo(
             vuelo_id=instance.id,
             origen=validated_data.get("origen", instance.origen),
             destino=validated_data.get("destino", instance.destino),
@@ -298,7 +298,7 @@ class PasajeroSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Actualiza un pasajero existente usando la capa de servicio"""
-        return PasajeroService.actualizar_pasajero(
+        return PasajeroService.update_pasajero(
             pasajero_id=instance.id,
             nombre=validated_data.get("nombre", instance.nombre),
             apellido=validated_data.get("apellido", instance.apellido),

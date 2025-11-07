@@ -126,7 +126,7 @@ class FlightFilterAPIView(AuthView, ListAPIView):
         destino = self.request.query_params.get("destino")
         fecha = self.request.query_params.get("fecha")
 
-        return VueloService.filtrar_vuelos(origen, destino, fecha)
+        return VueloService.filter_vuelos(origen, destino, fecha)
 
 
 class FlightViewSet(AuthAdminView, viewsets.ModelViewSet):
