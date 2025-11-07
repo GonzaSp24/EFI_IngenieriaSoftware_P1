@@ -6,6 +6,8 @@ Todos los serializers en un solo archivo siguiendo el patrón de Mile
 from rest_framework import serializers
 from airline.models import Vuelo, Avion, Asiento, Pasajero, Reserva, Boleto
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from rest_framework.exceptions import AuthenticationFailed
 
 from airline.services import (
     VueloService,
@@ -14,6 +16,65 @@ from airline.services import (
     ReservaService,
     BoletoService,
 )
+
+class AsientoMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Asiento
+        fields = ["id", "fila", "columna", "numero", "tipo"]
+
+class PasajeroMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pasajero
+        fields = ["id", "nombre", "apellido", "documento"]
+
+class ReservaMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reserva
+        fields = ["id", "estado", "codigo_reserva"]
+
+# ============================================================================
+# SERIALIZERS DE LOGIN Y REGISTRO
+# ============================================================================
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Serializer para manejar la autenticación de usuarios (login).
+    """
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    token = serializers.CharField(read_only=True)
+
+    def validate(self, attrs):
+        username = attrs.get("username")
+        password = attrs.get("password")
+
+        user = authenticate(username=username, password=password)
+        if not user:
+            raise AuthenticationFailed("Credenciales inválidas.")
+
+        attrs["user"] = user
+        return attrs
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    """
+    Serializer para registrar nuevos usuarios.
+    """
+    password = serializers.CharField(write_only=True, min_length=6)
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "password", "first_name", "last_name"]
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data.get("email", ""),
+            password=validated_data["password"],
+            first_name=validated_data.get("first_name", ""),
+            last_name=validated_data.get("last_name", ""),
+        )
+        return user
 
 
 # ============================================================================
@@ -33,23 +94,11 @@ class AvionSerializer(serializers.ModelSerializer):
         fields = ["id", "modelo", "capacidad", "filas", "columnas"]
 
     def create(self, validated_data):
-        """Crea un nuevo avión usando la capa de servicio"""
-        return AvionService.crear_avion(
-            modelo=validated_data["modelo"],
-            capacidad=validated_data["capacidad"],
-            filas=validated_data["filas"],
-            columnas=validated_data["columnas"],
-        )
-
+        # le pasamos el dict tal cual
+        return AvionService.create_avion(validated_data)
+    
     def update(self, instance, validated_data):
-        """Actualiza un avión existente usando la capa de servicio"""
-        return AvionService.actualizar_avion(
-            avion_id=instance.id,
-            modelo=validated_data.get("modelo", instance.modelo),
-            capacidad=validated_data.get("capacidad", instance.capacidad),
-            filas=validated_data.get("filas", instance.filas),
-            columnas=validated_data.get("columnas", instance.columnas),
-        )
+        return AvionService.update_avion(instance.id, validated_data)
 
 
 class AsientoSerializer(serializers.ModelSerializer):
@@ -115,7 +164,7 @@ class VueloDetailSerializer(serializers.ModelSerializer):
 
     avion = AvionSerializer(read_only=True)
     asientos_disponibles = serializers.SerializerMethodField()
-
+    asientos = serializers.SerializerMethodField() 
     class Meta:
         model = Vuelo
         fields = [
@@ -129,11 +178,29 @@ class VueloDetailSerializer(serializers.ModelSerializer):
             "estado",
             "avion",
             "asientos_disponibles",
+            "asientos",        
         ]
 
     def get_asientos_disponibles(self, obj):
-        """Calcula la cantidad de asientos disponibles para este vuelo"""
-        return VueloService.obtener_asientos_disponibles(obj.id)
+        return VueloService.get_asientos_disponibles(obj.id)
+
+    def get_asientos(self, obj):
+        """
+        Serializa la salida de obj.get_asientos_con_estado_para_vuelo(), que
+        trae una lista de diccionarios con llaves: asiento, estado_vuelo, pasajero, reserva
+        """
+        items = []
+        for info in obj.get_asientos_con_estado_para_vuelo():
+            asiento = info.get("asiento")
+            pasajero = info.get("pasajero")
+            reserva = info.get("reserva")
+            items.append({
+                "asiento": AsientoMiniSerializer(asiento).data if asiento else None,
+                "estado_vuelo": info.get("estado_vuelo"),
+                "pasajero": PasajeroMiniSerializer(pasajero).data if pasajero else None,
+                "reserva": ReservaMiniSerializer(reserva).data if reserva else None,
+            })
+        return items
 
 
 class VueloSerializer(serializers.ModelSerializer):
@@ -165,15 +232,15 @@ class VueloSerializer(serializers.ModelSerializer):
             "avion",
             "avion_display",
         ]
+        read_only_fields = ["duracion"]
 
     def create(self, validated_data):
         """Crea un nuevo vuelo usando la capa de servicio"""
-        return VueloService.crear_vuelo(
+        return VueloService.create_vuelo(
             origen=validated_data["origen"],
             destino=validated_data["destino"],
             fecha_salida=validated_data["fecha_salida"],
             fecha_llegada=validated_data["fecha_llegada"],
-            duracion=validated_data["duracion"],
             precio_base=validated_data["precio_base"],
             estado=validated_data["estado"],
             avion_id=validated_data["avion"].id,
@@ -187,7 +254,6 @@ class VueloSerializer(serializers.ModelSerializer):
             destino=validated_data.get("destino", instance.destino),
             fecha_salida=validated_data.get("fecha_salida", instance.fecha_salida),
             fecha_llegada=validated_data.get("fecha_llegada", instance.fecha_llegada),
-            duracion=validated_data.get("duracion", instance.duracion),
             precio_base=validated_data.get("precio_base", instance.precio_base),
             estado=validated_data.get("estado", instance.estado),
             avion_id=validated_data.get("avion", instance.avion).id,
@@ -220,7 +286,7 @@ class PasajeroSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Crea un nuevo pasajero usando la capa de servicio"""
-        return PasajeroService.crear_pasajero(
+        return PasajeroService.create_pasajero(
             nombre=validated_data["nombre"],
             apellido=validated_data["apellido"],
             documento=validated_data["documento"],
@@ -296,24 +362,32 @@ class ReservaSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Crea una nueva reserva usando la capa de servicio"""
-        return ReservaService.crear_reserva(
+        # usuario desde el request (no del payload)
+        user = None
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            user = request.user
+
+        return ReservaService.create_reserva(
             vuelo_id=validated_data["vuelo"].id,
             pasajero_id=validated_data["pasajero"].id,
             asiento_id=validated_data["asiento"].id,
-            usuario_id=validated_data["usuario"].id,
+            usuario_id=(user.id if user else None),
             precio=validated_data.get("precio"),
+            # si querés permitir código custom, pasalo; si no, que lo genere el service
             codigo_reserva=validated_data.get("codigo_reserva"),
+            estado=validated_data.get("estado", "pendiente"),
         )
 
     def update(self, instance, validated_data):
         """Actualiza una reserva existente usando la capa de servicio"""
-        return ReservaService.actualizar_reserva(
+        return ReservaService.update_reserva(  # <— usa el mismo nombre siempre
             reserva_id=instance.id,
             estado=validated_data.get("estado", instance.estado),
             precio=validated_data.get("precio", instance.precio),
-            vuelo_id=validated_data.get("vuelo", instance.vuelo).id,
-            pasajero_id=validated_data.get("pasajero", instance.pasajero).id,
-            asiento_id=validated_data.get("asiento", instance.asiento).id,
+            vuelo_id=(validated_data.get("vuelo", instance.vuelo).id),
+            pasajero_id=(validated_data.get("pasajero", instance.pasajero).id),
+            asiento_id=(validated_data.get("asiento", instance.asiento).id),
         )
 
 

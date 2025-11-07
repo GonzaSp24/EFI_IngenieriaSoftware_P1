@@ -5,7 +5,7 @@ Este módulo contiene las capas de servicios para reservas y boletos.
 Implementa todas las reglas de negocio complejas como validación de
 disponibilidad de asientos, estados de reservas, generación de boletos, etc.
 """
-
+from django.db import transaction
 from airline.repositories import (
     ReservaRepository,
     BoletoRepository,
@@ -13,6 +13,7 @@ from airline.repositories import (
     PasajeroRepository,
     AsientoRepository,
 )
+from airline.models import Vuelo, Pasajero, Asiento, Reserva
 from rest_framework.exceptions import ValidationError, NotFound
 
 
@@ -74,80 +75,60 @@ class ReservaService:
         return reserva
 
     @staticmethod
-    def create_reserva(data):
-        """
-        Crear una nueva reserva con validaciones exhaustivas
+    @transaction.atomic
+    def create_reserva(
+        *,
+        vuelo=None, vuelo_id=None,
+        pasajero=None, pasajero_id=None,
+        asiento=None, asiento_id=None,
+        precio=None,
+        estado="pendiente"
+    ) -> Reserva:
+        # Resolver objetos a partir de IDs si hace falta
+        if vuelo is None:
+            if vuelo_id is None:
+                raise ValidationError({"vuelo": "Debe indicar 'vuelo' o 'vuelo_id'."})
+            try:
+                vuelo = Vuelo.objects.get(pk=vuelo_id)
+            except Vuelo.DoesNotExist:
+                raise NotFound("Vuelo no encontrado")
 
-        Este método implementa múltiples validaciones de negocio:
-        - Verifica que el vuelo, pasajero y asiento existan
-        - Valida que el asiento pertenezca al avión del vuelo
-        - Verifica disponibilidad del asiento para ese vuelo
-        - Evita reservas duplicadas del mismo pasajero en el mismo vuelo
+        if pasajero is None:
+            if pasajero_id is None:
+                raise ValidationError({"pasajero": "Debe indicar 'pasajero' o 'pasajero_id'."})
+            try:
+                pasajero = Pasajero.objects.get(pk=pasajero_id)
+            except Pasajero.DoesNotExist:
+                raise NotFound("Pasajero no encontrado")
 
-        Args:
-            data (dict): Datos de la reserva (vuelo, pasajero, asiento, etc.)
+        if asiento is None:
+            if asiento_id is None:
+                raise ValidationError({"asiento": "Debe indicar 'asiento' o 'asiento_id'."})
+            try:
+                asiento = Asiento.objects.get(pk=asiento_id)
+            except Asiento.DoesNotExist:
+                raise NotFound("Asiento no encontrado")
 
-        Returns:
-            Reserva: Objeto reserva creado con estado 'pendiente'
-
-        Raises:
-            ValidationError: Si alguna validación falla
-        """
-        # Extraer IDs de los objetos relacionados
-        vuelo_id = (
-            data.get("vuelo").id
-            if hasattr(data.get("vuelo"), "id")
-            else data.get("vuelo")
-        )
-        pasajero_id = (
-            data.get("pasajero").id
-            if hasattr(data.get("pasajero"), "id")
-            else data.get("pasajero")
-        )
-        asiento_id = (
-            data.get("asiento").id
-            if hasattr(data.get("asiento"), "id")
-            else data.get("asiento")
-        )
-
-        # Validar que el vuelo exista
-        vuelo = VueloRepository.get_by_id(vuelo_id)
-        if not vuelo:
-            raise ValidationError("El vuelo especificado no existe")
-
-        # Validar que el pasajero exista
-        pasajero = PasajeroRepository.get_by_id(pasajero_id)
-        if not pasajero:
-            raise ValidationError("El pasajero especificado no existe")
-
-        # Validar que el asiento exista
-        asiento = AsientoRepository.get_by_id(asiento_id)
-        if not asiento:
-            raise ValidationError("El asiento especificado no existe")
-
-        # Validar que el asiento pertenezca al avión del vuelo
+        # Validaciones de negocio
         if asiento.avion_id != vuelo.avion_id:
-            raise ValidationError("El asiento no pertenece al avión de este vuelo")
+            raise ValidationError({"asiento": "El asiento no pertenece al avión de este vuelo."})
 
-        # Validar que el asiento esté disponible para este vuelo
-        if not AsientoRepository.check_disponibilidad(asiento_id, vuelo_id):
-            raise ValidationError("El asiento ya está reservado para este vuelo")
+        if Reserva.objects.filter(vuelo=vuelo, asiento=asiento, estado="confirmada").exists():
+            raise ValidationError({"asiento": "El asiento ya está reservado para este vuelo."})
 
-        # Validar que el pasajero no tenga ya una reserva activa para este vuelo
-        reservas_existentes = (
-            ReservaRepository.get_by_vuelo(vuelo_id)
-            .filter(pasajero_id=pasajero_id)
-            .exclude(estado="cancelada")
+        # Precio por defecto desde el vuelo
+        if precio is None:
+            precio = vuelo.precio_base
+
+        # Crear
+        reserva = Reserva.objects.create(
+            vuelo=vuelo,
+            pasajero=pasajero,
+            asiento=asiento,
+            precio=precio,
+            estado=estado,
         )
-
-        if reservas_existentes.exists():
-            raise ValidationError("El pasajero ya tiene una reserva para este vuelo")
-
-        # Crear la reserva con estado pendiente por defecto
-        if "estado" not in data:
-            data["estado"] = "pendiente"
-
-        return ReservaRepository.create(data)
+        return reserva
 
     @staticmethod
     def confirmar_reserva(reserva_id):
@@ -211,23 +192,42 @@ class ReservaService:
         return ReservaRepository.cambiar_estado(reserva_id, "cancelada")
 
     @staticmethod
-    def update_reserva(reserva_id, data):
-        """
-        Actualizar los datos de una reserva
-
-        Args:
-            reserva_id (int): ID de la reserva a actualizar
-            data (dict): Datos a actualizar
-
-        Returns:
-            Reserva: Objeto reserva actualizado
-
-        Raises:
-            NotFound: Si la reserva no existe
-        """
-        reserva = ReservaRepository.update(reserva_id, data)
-        if not reserva:
+    @transaction.atomic
+    def update_reserva(
+        *,
+        reserva_id: int,
+        estado=None,
+        asiento=None, asiento_id=None,
+        precio=None
+    ) -> Reserva:
+        try:
+            reserva = Reserva.objects.select_for_update().get(pk=reserva_id)
+        except Reserva.DoesNotExist:
             raise NotFound("Reserva no encontrada")
+
+        # Cambiar asiento (opcional)
+        if asiento is None and asiento_id is not None:
+            try:
+                asiento = Asiento.objects.get(pk=asiento_id)
+            except Asiento.DoesNotExist:
+                raise NotFound("Asiento no encontrado")
+
+        if asiento is not None:
+            if asiento.avion_id != reserva.vuelo.avion_id:
+                raise ValidationError({"asiento": "El asiento no pertenece al avión del vuelo."})
+            if Reserva.objects.filter(
+                vuelo=reserva.vuelo, asiento=asiento, estado="confirmada"
+            ).exclude(pk=reserva.pk).exists():
+                raise ValidationError({"asiento": "El asiento ya está reservado para este vuelo."})
+            reserva.asiento = asiento
+
+        if estado is not None:
+            reserva.estado = estado
+
+        if precio is not None:
+            reserva.precio = precio
+
+        reserva.save()
         return reserva
 
 
@@ -289,7 +289,7 @@ class BoletoService:
         return boleto
 
     @staticmethod
-    def generar_boleto(reserva_id):
+    def create_boleto(reserva_id):
         """
         Generar un boleto para una reserva confirmada
 

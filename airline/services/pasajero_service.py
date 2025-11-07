@@ -9,6 +9,9 @@ y reglas de negocio antes de interactuar con la base de datos.
 
 from airline.repositories import PasajeroRepository
 from rest_framework.exceptions import ValidationError, NotFound
+from datetime import date
+from rest_framework.exceptions import ValidationError
+from airline.models import Pasajero
 
 
 class PasajeroService:
@@ -69,31 +72,56 @@ class PasajeroService:
         return pasajero
 
     @staticmethod
-    def create_pasajero(data):
+    def create_pasajero(data=None, /, **kwargs):
         """
-        Crear un nuevo pasajero con validaciones de unicidad
-
-        Valida que no exista otro pasajero con el mismo documento o email
-        antes de crear el registro.
-
-        Args:
-            data (dict): Datos del pasajero a crear (nombre, apellido, documento, email, etc.)
-
-        Returns:
-            Pasajero: Objeto pasajero creado
-
-        Raises:
-            ValidationError: Si ya existe un pasajero con el mismo documento o email
+        Crear un pasajero aceptando un dict (data) o kwargs.
+        Siempre retorna una instancia de `Pasajero`.
         """
-        # Validar que no exista el documento
-        if PasajeroRepository.get_by_documento(data.get("documento")):
+        # 1) Unificar entrada
+        if data is None:
+            data = kwargs
+        # defensivo: trabajar sobre una copia
+        payload = dict(data or {})
+
+        # 2) Normalizaciones/por defecto
+        # fecha_nacimiento puede venir como string "YYYY-MM-DD" o vacío
+        fn = payload.get("fecha_nacimiento")
+        if isinstance(fn, str) and fn.strip():
+            try:
+                payload["fecha_nacimiento"] = date.fromisoformat(fn)
+            except ValueError:
+                raise ValidationError("fecha_nacimiento debe tener formato YYYY-MM-DD")
+        elif not fn:
+            payload["fecha_nacimiento"] = None
+
+        # telefono opcional
+        payload.setdefault("telefono", "")
+
+        # 3) Validaciones de unicidad
+        if PasajeroRepository.get_by_documento(payload.get("documento")):
             raise ValidationError("Ya existe un pasajero con este documento")
-
-        # Validar que no exista el email
-        if PasajeroRepository.get_by_email(data.get("email")):
+        if PasajeroRepository.get_by_email(payload.get("email")):
             raise ValidationError("Ya existe un pasajero con este email")
 
-        return PasajeroRepository.create(data)
+        # 4) Crear (el repo debe crear el registro)
+        obj = PasajeroRepository.create(payload)
+
+        # 5) Asegurar que devolvemos un modelo, no un dict
+        if isinstance(obj, dict):
+            # si el repo devolvió un dict con id, re-hidratar
+            if obj.get("id"):
+                obj = Pasajero.objects.get(id=obj["id"])
+            else:
+                # fallback por email (único)
+                obj = Pasajero.objects.get(email=payload["email"])
+
+        # 6) Vincular usuario si vino en payload (opcional)
+        usuario = payload.get("usuario")
+        if usuario and getattr(obj, "usuario_id", None) is None:
+            obj.usuario = usuario
+            obj.save(update_fields=["usuario"])
+
+        return obj
 
     @staticmethod
     def update_pasajero(pasajero_id, data):

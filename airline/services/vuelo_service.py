@@ -6,7 +6,7 @@ conteniendo la lógica de negocio y validaciones.
 
 from airline.repositories import VueloRepository, AvionRepository, AsientoRepository
 from rest_framework.exceptions import ValidationError, NotFound
-from datetime import datetime
+from datetime import timedelta
 
 
 class AvionService:
@@ -43,38 +43,25 @@ class AvionService:
         return avion
 
     @staticmethod
-    def create_avion(data):
+    def create_avion(data=None, /, **kwargs):
         """
-        Crear un nuevo avión.
-        El método save() del modelo se encarga de crear los asientos automáticamente.
-
-        Args:
-            data: Diccionario con los datos del avión (modelo, filas, columnas)
-
-        Returns:
-            Objeto Avion creado
+        Acepta un dict (data) o kwargs (modelo=..., capacidad=..., etc.)
+        y siempre delega al repositorio con un dict.
         """
-        return AvionRepository.create(data)
+        if data is None:
+            data = kwargs
+        payload = dict(data or {})
+        return AvionRepository.create(payload)
 
     @staticmethod
-    def update_avion(avion_id, data):
+    def update_avion(avion_id, data=None, /, **kwargs):
         """
-        Actualizar un avión existente.
-
-        Args:
-            avion_id: ID del avión a actualizar
-            data: Diccionario con los datos a actualizar
-
-        Returns:
-            Objeto Avion actualizado
-
-        Raises:
-            NotFound: Si el avión no existe
+        Igual que create_avion, pero para update.
         """
-        avion = AvionRepository.update(avion_id, data)
-        if not avion:
-            raise NotFound("Avión no encontrado")
-        return avion
+        if data is None:
+            data = kwargs
+        payload = dict(data or {})
+        return AvionRepository.update(avion_id, payload)
 
     @staticmethod
     def delete_avion(avion_id):
@@ -182,7 +169,7 @@ class VueloService:
         vuelo = VueloRepository.get_by_id(vuelo_id)
         if not vuelo:
             raise NotFound("Vuelo no encontrado")
-        return vuelo
+        return vuelo.objects.get(pk=vuelo_id)
 
     @staticmethod
     def get_upcoming_flights():
@@ -215,7 +202,7 @@ class VueloService:
         return VueloRepository.filter_vuelos(origen, destino, fecha, estado)
 
     @staticmethod
-    def create_vuelo(data):
+    def create_vuelo(*, origen, destino, fecha_salida, fecha_llegada, precio_base, estado, avion_id):
         """
         Crear un nuevo vuelo.
         Valida que el avión exista antes de crear el vuelo.
@@ -229,20 +216,28 @@ class VueloService:
         Raises:
             ValidationError: Si el avión no existe o datos inválidos
         """
-        # Validar que el avión exista
-        avion_id = (
-            data.get("avion").id
-            if hasattr(data.get("avion"), "id")
-            else data.get("avion")
-        )
-        avion = AvionRepository.get_by_id(avion_id)
-        if not avion:
-            raise ValidationError("El avión especificado no existe")
+        # Validaciones básicas
+        if fecha_llegada <= fecha_salida:
+            raise ValueError("fecha_llegada debe ser posterior a fecha_salida")
 
-        return VueloRepository.create(data)
+        duracion = fecha_llegada - fecha_salida  # <-- calcular acá
+
+        data = {
+            "origen": origen,
+            "destino": destino,
+            "fecha_salida": fecha_salida,
+            "fecha_llegada": fecha_llegada,
+            "duracion": duracion,
+            "precio_base": precio_base,
+            "estado": estado,
+            "avion_id": avion_id,
+        }
+        # Usá tu repo o el modelo directamente
+        return VueloRepository.create(data)  # o Vuelo.objects.create(**data)
 
     @staticmethod
-    def update_vuelo(vuelo_id, data):
+    def update_vuelo(*, vuelo_id, origen=None, destino=None, fecha_salida=None, fecha_llegada=None,
+                         precio_base=None, estado=None, avion_id=None):
         """
         Actualizar un vuelo existente.
 
@@ -256,9 +251,24 @@ class VueloService:
         Raises:
             NotFound: Si el vuelo no existe
         """
-        vuelo = VueloRepository.update(vuelo_id, data)
-        if not vuelo:
-            raise NotFound("Vuelo no encontrado")
+        vuelo = VueloRepository.get_by_id(vuelo_id) 
+
+        # Aplicar cambios
+        if origen is not None: vuelo.origen = origen
+        if destino is not None: vuelo.destino = destino
+        if fecha_salida is not None: vuelo.fecha_salida = fecha_salida
+        if fecha_llegada is not None: vuelo.fecha_llegada = fecha_llegada
+        if precio_base is not None: vuelo.precio_base = precio_base
+        if estado is not None: vuelo.estado = estado
+        if avion_id is not None: vuelo.avion_id = avion_id
+
+        # Recalcular duración si cambió alguna fecha
+        if vuelo.fecha_salida and vuelo.fecha_llegada:
+            if vuelo.fecha_llegada <= vuelo.fecha_salida:
+                raise ValueError("fecha_llegada debe ser posterior a fecha_salida")
+            vuelo.duracion = vuelo.fecha_llegada - vuelo.fecha_salida
+
+        VueloRepository.save(vuelo) 
         return vuelo
 
     @staticmethod

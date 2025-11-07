@@ -4,6 +4,7 @@ Todas las vistas en un solo archivo siguiendo el patrón de Mile
 """
 
 from rest_framework import viewsets, status
+from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,6 +12,9 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from django.utils.crypto import get_random_string
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
 from airline.models import Vuelo, Avion, Asiento, Pasajero, Reserva, Boleto
 
 from api.serializers import (
@@ -22,6 +26,8 @@ from api.serializers import (
     PasajeroSerializer,
     ReservaSerializer,
     BoletoSerializer,
+    LoginSerializer,
+    RegisterSerializer,
 )
 
 from api.mixins import AuthView, AuthAdminView
@@ -51,28 +57,47 @@ class FlightAvailableListAPIView(AuthView, ListAPIView):
 
     def get_queryset(self):
         """Obtiene vuelos disponibles usando el servicio"""
-        return VueloService.obtener_vuelos_proximos()
+        return VueloService.get_upcoming_flights()
 
 
 class FlightDetailAPIView(AuthView, RetrieveAPIView):
     """
     GET /api/flightDetail/<pk>/
-    Da el detalle completo de un vuelo específico.
-    Accesible para cualquier usuario autenticado.
+    Detalle completo de un vuelo (asientos, reservas, etc.).
     """
-
     permission_classes = [IsAuthenticated]
     serializer_class = VueloDetailSerializer
+    lookup_field = "pk"  # explícito: tomamos <pk> de la URL
+
+    @extend_schema(responses=VueloDetailSerializer)
+    def get(self, request, *args, **kwargs):
+        obj = self.get_object()
+        ser = self.get_serializer(obj)
+        return Response(ser.data)
 
     def get_object(self):
-        """Obtiene un vuelo por ID usando el servicio"""
+        """
+        Obtiene un Vuelo POR MODELO usando el service.
+        Importantísimo: el service debe devolver instancia de Vuelo,
+        no dict. Idealmente con select_related/prefetch para performance.
+        """
         vuelo_id = self.kwargs.get("pk")
-        try:
-            return VueloService.obtener_por_id(vuelo_id)
-        except Vuelo.DoesNotExist:
-            from rest_framework.exceptions import NotFound
+        vuelo = VueloService.get_vuelo(vuelo_id)
+        if vuelo is None:
+            raise NotFound("Vuelo no encontrado")
 
-            raise NotFound(detail="Vuelo no encontrado")
+        # Si el service no aplica prefetch, reforzá acá:
+        # (Evita N+1 al serializar asientos y reservas)
+        return (
+            Vuelo.objects
+            .select_related("avion")
+            .prefetch_related(
+                "avion__asiento_set",
+                "reservas__pasajero",
+                "reservas__asiento",
+            )
+            .get(pk=vuelo.pk)
+        )
 
 
 @extend_schema(
@@ -149,17 +174,21 @@ class PlaneLayoutAPIView(AuthAdminView, ListAPIView):
 
     permission_classes = [IsAuthenticated]
     serializer_class = AsientoSerializer
-    permission_classes = [IsAuthenticated]
     pagination_class = None
 
-    def list(self, request, plane_id):
-        """Obtiene el layout del avión usando el servicio"""
-        data = AvionService.obtener_layout_avion(plane_id)
-        if not data:
-            return Response(
-                {"error": "El avión no existe."}, status=status.HTTP_404_NOT_FOUND
-            )
-        return Response(data, status=status.HTTP_200_OK)
+    def get(self, request, pk):
+        avion = AvionService.get_avion(pk)
+        if not avion:
+            raise NotFound("Avión no encontrado")
+
+        asientos = avion.asiento_set.all().order_by("fila", "columna")
+        avion_data = AvionSerializer(avion).data
+        asientos_data = AsientoSerializer(asientos, many=True).data
+
+        return Response({
+            "avion": avion_data,
+            "asientos": asientos_data
+        })
 
 
 class SeatAvailabilityAPIView(AuthView, RetrieveAPIView):
@@ -174,7 +203,7 @@ class SeatAvailabilityAPIView(AuthView, RetrieveAPIView):
 
     def get(self, request, plane_id, seat_code):
         """Verifica disponibilidad de un asiento específico"""
-        data = AsientoService.verificar_disponibilidad(plane_id, seat_code)
+        data = AsientoService.check_disponibilidad(plane_id, seat_code)
         if not data:
             return Response(
                 {"error": "El asiento no existe."}, status=status.HTTP_404_NOT_FOUND
@@ -195,7 +224,7 @@ class AvailableSeatsListAPIView(AuthView, ListAPIView):
     def get_queryset(self):
         """Obtiene asientos disponibles para un vuelo"""
         flight_id = self.kwargs.get("flight_id")
-        return AsientoService.obtener_asientos_disponibles_por_vuelo(flight_id)
+        return AsientoService.get_asientos_by_avion(flight_id)
 
 
 # ============================================================================
@@ -231,7 +260,7 @@ class PassengerDetailAPIView(AuthView, RetrieveAPIView):
     def get_object(self):
         """Obtiene un pasajero por ID"""
         pasajero_id = self.kwargs.get("pk")
-        return PasajeroService.obtener_por_id(pasajero_id)
+        return PasajeroService.get_pasajero(pasajero_id)
 
 
 class ReservationByPassengerAPIView(AuthView, ListAPIView):
@@ -248,7 +277,7 @@ class ReservationByPassengerAPIView(AuthView, ListAPIView):
     def get_queryset(self):
         """Obtiene reservas de un pasajero"""
         passenger_id = self.kwargs.get("passenger_id")
-        return ReservaService.obtener_por_pasajero(passenger_id)
+        return ReservaService.get_reserva(passenger_id)
 
 
 # ============================================================================
@@ -306,7 +335,7 @@ class CreateReservationAPIView(AuthAdminView, viewsets.ViewSet):
         precio = vuelo.precio_base
 
         # Crear la reserva usando el servicio
-        reserva = ReservaService.crear_reserva(
+        reserva = ReservaService.create_reserva(
             vuelo_id=vuelo_id,
             pasajero_id=pasajero_id,
             asiento_id=asiento_id,
@@ -335,7 +364,7 @@ class ChangeReservationStatusAPIView(AuthAdminView, APIView):
     def get(self, request, reservation_id=None):
         """GET opcional solo para Swagger / testing"""
         try:
-            reserva = ReservaService.obtener_por_id(reservation_id)
+            reserva = ReservaService.get_reserva(reservation_id)
         except ValueError:
             return Response(
                 {"error": "La reserva no existe."}, status=status.HTTP_404_NOT_FOUND
@@ -347,7 +376,7 @@ class ChangeReservationStatusAPIView(AuthAdminView, APIView):
     def patch(self, request, reservation_id=None):
         """Cambia el estado de una reserva"""
         try:
-            reserva = ReservaService.obtener_por_id(reservation_id)
+            reserva = ReservaService.get_reserva(reservation_id)
         except ValueError:
             return Response(
                 {"error": "La reserva no existe."}, status=status.HTTP_404_NOT_FOUND
@@ -426,7 +455,7 @@ class GenerateTicketAPIView(AuthAdminView, APIView):
             )
 
         # Crear el boleto usando el servicio
-        boleto = BoletoService.crear_boleto(reservation_id)
+        boleto = BoletoService.create_boleto(reservation_id)
 
         serializer = BoletoSerializer(boleto)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -444,7 +473,7 @@ class TicketInformationAPIView(AuthView, RetrieveAPIView):
 
     def get(self, request, barcode):
         """Obtiene información de un boleto por código de barras"""
-        data = BoletoService.obtener_info_boleto(barcode)
+        data = BoletoService.get_boleto_by_codigo(barcode)
         if not data:
             return Response(
                 {"error": "El ticket no existe."}, status=status.HTTP_404_NOT_FOUND
@@ -475,64 +504,53 @@ class BoletoViewSet(AuthAdminView, viewsets.ModelViewSet):
 class RegisterView(APIView):
     """
     POST /api/auth/register/
-    Registrar un nuevo usuario y pasajero.
-    Crea automáticamente un usuario de Django y un pasajero asociado.
+    Crea un usuario Django y su pasajero asociado. Devuelve tokens JWT.
     """
-
     permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
 
+    @extend_schema(
+        request=RegisterSerializer,
+        responses={
+            201: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
     def post(self, request):
-        """Registra un nuevo usuario y pasajero"""
-        from rest_framework_simplejwt.tokens import RefreshToken
-        from django.contrib.auth.models import User
+        # Validación con serializer
+        ser = RegisterSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        v = ser.validated_data
 
-        data = request.data
-
-        # Validaciones básicas
-        required_fields = [
-            "nombre",
-            "apellido",
-            "documento",
-            "email",
-            "password",
-            "tipo_documento",
-            "fecha_nacimiento",
-        ]
-        for field in required_fields:
-            if not data.get(field):
-                return Response(
-                    {"error": f"El campo {field} es obligatorio."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        # Verificar si el email ya existe
-        if User.objects.filter(email=data["email"]).exists():
-            return Response(
-                {"error": "El email ya está registrado."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # Reglas simples de unicidad
+        if User.objects.filter(email=v.get("email") or "").exists():
+            return Response({"error": "El email ya está registrado."}, status=400)
+        if User.objects.filter(username=v["username"]).exists():
+            return Response({"error": "El username ya está registrado."}, status=400)
 
         # Crear usuario
-        username = data["email"].split("@")[0]
         user = User.objects.create_user(
-            username=username, email=data["email"], password=data["password"]
+            username=v["username"],
+            email=v.get("email", ""),
+            password=v["password"],
+            first_name=v.get("first_name", ""),
+            last_name=v.get("last_name", ""),
         )
 
-        # Crear pasajero usando el servicio
-        pasajero = PasajeroService.crear_pasajero(
-            nombre=data["nombre"],
-            apellido=data["apellido"],
-            documento=data["documento"],
-            tipo_documento=data["tipo_documento"],
-            email=data["email"],
-            telefono=data.get("telefono", ""),
-            fecha_nacimiento=data["fecha_nacimiento"],
-            nacionalidad=data.get("nacionalidad", ""),
+        # Crear pasajero usando tus datos del body
+        pasajero = PasajeroService.create_pasajero(
+            nombre=request.data.get("nombre", user.first_name or user.username),
+            apellido=request.data.get("apellido", user.last_name or ""),
+            documento=request.data.get("documento", ""),
+            tipo_documento=request.data.get("tipo_documento", "DNI"),
+            email=user.email or f"{user.username}@example.com",
+            telefono=request.data.get("telefono", ""),
+            fecha_nacimiento=request.data.get("fecha_nacimiento", None),
+            usuario=user,  # si querés linkear OneToOne en el alta
         )
 
-        # Generar tokens JWT
+        # JWT
         refresh = RefreshToken.for_user(user)
-
         return Response(
             {
                 "user": {
@@ -553,60 +571,55 @@ class RegisterView(APIView):
 class LoginView(APIView):
     """
     POST /api/auth/login/
-    Iniciar sesión con username/email y password.
-    Retorna tokens JWT (access y refresh).
+    Acepta username o email + password. Devuelve tokens JWT.
     """
-
     permission_classes = [AllowAny]
-    
+    serializer_class = LoginSerializer
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+            401: OpenApiTypes.OBJECT,
+        },
+    )
     def post(self, request):
-        """Inicia sesión y retorna tokens JWT"""
-        from rest_framework_simplejwt.tokens import RefreshToken
-        from django.contrib.auth import authenticate
-        from django.contrib.auth.models import User
+        ser = LoginSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
 
-        username = request.data.get("username")
-        password = request.data.get("password")
+        username_or_email = ser.validated_data["username"]
+        password = ser.validated_data["password"]
 
-        if not username or not password:
-            return Response(
-                {"error": "Debe proporcionar username y password."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # 1) intentar con username directo
+        user = authenticate(username=username_or_email, password=password)
 
-        # Intentar autenticar con username
-        user = authenticate(username=username, password=password)
-
-        # Si no funciona, intentar con email
+        # 2) si falla, buscar por email y reintentar con el username real
         if not user:
             try:
-                user_obj = User.objects.get(email=username)
-                user = authenticate(username=user_obj.username, password=password)
+                u = User.objects.get(email=username_or_email)
+                user = authenticate(username=u.username, password=password)
             except User.DoesNotExist:
-                pass
+                user = None
 
-        if user:
-            # Generar tokens JWT
-            refresh = RefreshToken.for_user(user)
+        if not user:
+            return Response({"error": "Credenciales inválidas."}, status=401)
 
-            return Response(
-                {
-                    "user": {
-                        "id": user.id,
-                        "username": user.username,
-                        "email": user.email,
-                        "is_staff": user.is_staff,
-                    },
-                    "tokens": {
-                        "refresh": str(refresh),
-                        "access": str(refresh.access_token),
-                    },
-                },
-                status=status.HTTP_200_OK,
-            )
-
+        refresh = RefreshToken.for_user(user)
         return Response(
-            {"error": "Credenciales inválidas."}, status=status.HTTP_401_UNAUTHORIZED
+            {
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is_staff": user.is_staff,
+                },
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+            },
+            status=200,
         )
 
 
@@ -627,7 +640,7 @@ class PasajerosPorVueloView(APIView):
     def get(self, request, vuelo_id):
         """Obtiene lista de pasajeros de un vuelo"""
         try:
-            vuelo = VueloService.obtener_por_id(vuelo_id)
+            vuelo = VueloService.get_vuelo(vuelo_id)
             reservas = Reserva.objects.filter(
                 vuelo_id=vuelo_id, estado="confirmada"
             ).select_related("pasajero")
@@ -668,14 +681,12 @@ class ReservasActivasPasajeroView(APIView):
         try:
             # Verificar permisos: admin o el mismo pasajero
             if not request.user.is_staff:
-                # Aquí deberías verificar si el usuario es el dueño del pasajero
-                # Por ahora permitimos solo a admins
                 return Response(
                     {"error": "No tiene permisos para ver este reporte."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            pasajero = PasajeroService.obtener_por_id(pasajero_id)
+            pasajero = PasajeroService.get_pasajero(pasajero_id)
             reservas = Reserva.objects.filter(
                 pasajero_id=pasajero_id, estado="confirmada"
             ).select_related("vuelo", "asiento")
