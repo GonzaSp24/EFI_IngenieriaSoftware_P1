@@ -1,54 +1,132 @@
-# Entorno virtual
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+
+# Virtual Environment
 venv/
 env/
 ENV/
-.venv/
+env.bak/
+venv.bak/
 
-# Archivos de base de datos
-*.sqlite3
-
-# Archivos de configuración local y variables de entorno
-.env
-.env.*
-*.local
-
-# Archivos de compilación de Python
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Archivos de log
-*.log
-
-# Archivos de sistema
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-Thumbs.db
 
-# Migraciones compiladas y cachés
-**/migrations/__pycache__/
-**/__pycache__/
-**/*.py[cod]
+# Environment variables
+.env
+.env.local
+.env.*.local
 
-# Archivos de tests o cobertura
-.coverage
+# Coverage reports
 htmlcov/
 .tox/
+.coverage
+.coverage.*
+.cache
 nosetests.xml
 coverage.xml
 *.cover
-*.py,cover
+.hypothesis/
+.pytest_cache/
 
-# Configuración de editores
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
+# Translations
+*.mo
+*.pot
 
-# Archivos de media (si se generan localmente)
-media/
-staticfiles/
+# Django stuff
+*.log
+local_settings.py
 
-# Archivos de compilación web (si usás webpack, tailwind, etc.)
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Node modules (si usas npm para frontend)
 node_modules/
-dist/
-build/
+npm-debug.log
+yarn-error.log
+
+# Archivos de sistema
+Thumbs.db
+.DS_Store
+
+# Archivos de backup
+*.bak
+*.backup
+*~
+
+# Archivos temporales
+*.tmp
+*.temp
