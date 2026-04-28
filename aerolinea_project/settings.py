@@ -16,8 +16,7 @@ load_dotenv()
 # Quick-start development settings
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-default-key")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "rutaceleste.onrender.com"]
-
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "rutaceleste.onrender.com", ".vercel.app", "*"]
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -204,13 +203,19 @@ SWAGGER_SETTINGS = {
 }
 
 # Configuración para producción (Render)
-if os.getenv("RENDER"):
-    DEBUG = False
-    ALLOWED_HOSTS.append(os.getenv("RENDER_EXTERNAL_HOSTNAME"))
+# Configuración de base de datos para producción (Vercel, Render, Supabase, etc.)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-    # Configuración de base de datos para producción
+if DATABASE_URL:
+    DEBUG = False
+    
+    # Agrega el dominio de Render si existe
+    if os.getenv("RENDER_EXTERNAL_HOSTNAME"):
+        ALLOWED_HOSTS.append(os.getenv("RENDER_EXTERNAL_HOSTNAME"))
+
+    # Conecta a la BD externa (PostgreSQL, Supabase, etc.)
     DATABASES["default"] = dj_database_url.config(
-        default=os.getenv("DATABASE_URL"), conn_max_age=600, conn_health_checks=True
+        default=DATABASE_URL, conn_max_age=600, conn_health_checks=True
     )
 
 # Configuración de Sentry (opcional)
